@@ -5,6 +5,7 @@ interface ReportOptions {
   format?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function reportCommand(path: string, options: ReportOptions): Promise<void> {
   try {
     // TODO: Implement report generation

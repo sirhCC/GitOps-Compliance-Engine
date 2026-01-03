@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { ValidationSummary, ValidationResult } from '../types.js';
+import { ValidationSummary, ValidationResult, Severity } from '../types.js';
 
 /**
  * Formats and displays validation results to the console
@@ -57,7 +57,7 @@ function displaySummary(summary: ValidationSummary): void {
   console.log(chalk.bold('By Severity:'));
   for (const [severity, count] of Object.entries(summary.violationsBySeverity)) {
     if (typeof count === 'number' && count > 0) {
-      const color = getSeverityColor(severity as any);
+      const color = getSeverityColor(severity as Severity);
       console.log(`  ${color(`${severity}:`)} ${count}`);
     }
   }

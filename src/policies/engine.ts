@@ -39,11 +39,13 @@ export class PolicyEngine {
 
     // Filter by enabled/disabled lists
     if (config.policies?.enabled) {
-      policies = policies.filter((p) => config.policies!.enabled!.includes(p.id));
+      const enabled = config.policies.enabled;
+      policies = policies.filter((p) => enabled.includes(p.id));
     }
 
     if (config.policies?.disabled) {
-      policies = policies.filter((p) => !config.policies!.disabled!.includes(p.id));
+      const disabled = config.policies.disabled;
+      policies = policies.filter((p) => !disabled.includes(p.id));
     }
 
     return policies;

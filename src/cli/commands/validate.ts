@@ -82,6 +82,7 @@ export async function validateCommand(path: string, options: ValidateOptions): P
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
 async function loadConfig(_configPath: string): Promise<ValidationConfig> {
   // TODO: Implement config file loading
   return {};
