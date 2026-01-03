@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample CloudFormation template for testing
+
+Resources:
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.xlarge
+      ImageId: ami-0c55b159cbfafe1f0
+      Tags:
+        - Key: Name
+          Value: WebServer
+
+  PublicBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: my-public-bucket
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      AllocatedStorage: 20
+      PubliclyAccessible: true
+      Tags:
+        - Key: Environment
+          Value: production
+        - Key: Owner
+          Value: platform-team
+        - Key: Project
+          Value: main-app

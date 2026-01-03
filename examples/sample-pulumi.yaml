@@ -1,0 +1,29 @@
+name: sample-project
+runtime: yaml
+description: Sample Pulumi configuration for testing
+
+resources:
+  webServer:
+    type: aws:ec2:Instance
+    properties:
+      instanceType: t2.xlarge
+      ami: ami-0c55b159cbfafe1f0
+      tags:
+        Name: WebServer
+
+  publicBucket:
+    type: aws:s3:Bucket
+    properties:
+      bucket: my-public-bucket
+
+  database:
+    type: aws:rds:Instance
+    properties:
+      instanceClass: db.t3.micro
+      engine: mysql
+      allocatedStorage: 20
+      publiclyAccessible: true
+      tags:
+        Environment: production
+        Owner: platform-team
+        Project: main-app
