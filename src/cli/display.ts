@@ -6,7 +6,7 @@ import { ValidationSummary, ValidationResult } from '../types.js';
  */
 export function displayResults(summary: ValidationSummary, showSummary = true): void {
   console.log();
-  
+
   // Display per-file results
   for (const result of summary.results) {
     displayFileResult(result);
@@ -22,7 +22,7 @@ export function displayResults(summary: ValidationSummary, showSummary = true): 
 function displayFileResult(result: ValidationResult): void {
   const statusIcon = result.passed ? chalk.green('✓') : chalk.red('✗');
   const fileName = chalk.bold(result.file);
-  
+
   console.log(`${statusIcon} ${fileName} (${result.resourceCount} resources)`);
 
   if (result.violations.length > 0) {
@@ -30,10 +30,12 @@ function displayFileResult(result: ValidationResult): void {
       const severityColor = getSeverityColor(violation.severity);
       const severityBadge = severityColor(`[${violation.severity.toUpperCase()}]`);
       const location = `${violation.resource.location.file}:${violation.resource.location.line || 0}`;
-      
+
       console.log(`  ${severityBadge} ${violation.message}`);
-      console.log(`    ${chalk.gray(`└─ ${violation.resource.type} "${violation.resource.id}" at ${location}`)}`);
-      
+      console.log(
+        `    ${chalk.gray(`└─ ${violation.resource.type} "${violation.resource.id}" at ${location}`)}`
+      );
+
       if (violation.remediation) {
         console.log(`    ${chalk.cyan(`💡 ${violation.remediation}`)}`);
       }
@@ -45,12 +47,12 @@ function displayFileResult(result: ValidationResult): void {
 function displaySummary(summary: ValidationSummary): void {
   console.log(chalk.bold('═══ Validation Summary ═══'));
   console.log();
-  
+
   console.log(`Files scanned:     ${summary.totalFiles}`);
   console.log(`Resources checked: ${summary.totalResources}`);
   console.log(`Total violations:  ${summary.totalViolations}`);
   console.log();
-  
+
   // Violations by severity
   console.log(chalk.bold('By Severity:'));
   for (const [severity, count] of Object.entries(summary.violationsBySeverity)) {
@@ -60,7 +62,7 @@ function displaySummary(summary: ValidationSummary): void {
     }
   }
   console.log();
-  
+
   // Final result
   if (summary.passed) {
     console.log(chalk.green.bold('✓ Validation PASSED'));
