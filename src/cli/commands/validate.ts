@@ -1,7 +1,7 @@
-import { ValidationConfig, ValidationSummary, Severity } from '../types.js';
-import { findIacFiles } from '../utils/file-finder.js';
-import { parseIacFile } from '../parsers/index.js';
-import { PolicyEngine } from '../policies/engine.js';
+import { ValidationConfig, ValidationSummary, Severity } from '../../types.js';
+import { findIacFiles } from '../../utils/file-finder.js';
+import { parseIacFile } from '../../parsers/index.js';
+import { PolicyEngine } from '../../policies/engine.js';
 import { displayResults, displayError } from '../display.js';
 
 interface ValidateOptions {
