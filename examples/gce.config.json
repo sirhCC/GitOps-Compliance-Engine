@@ -1,0 +1,13 @@
+{
+  "policies": {
+    "enabled": ["required-tags", "no-public-access", "cost-large-instance", "naming-convention"],
+    "disabled": []
+  },
+  "severity": {
+    "failOn": "error"
+  },
+  "exclude": {
+    "files": ["**/test/**", "**/*.test.tf"],
+    "resources": ["aws_s3_bucket_public_access_block"]
+  }
+}
