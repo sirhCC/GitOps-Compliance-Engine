@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { ValidationSummary, ValidationResult } from '../types';
+import { ValidationSummary, ValidationResult } from '../types.js';
 
 /**
  * Formats and displays validation results to the console

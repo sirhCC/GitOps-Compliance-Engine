@@ -1,4 +1,4 @@
-import { validateCommand } from './validate';
+import { validateCommand } from './validate.js';
 
 interface CheckOptions {
   config?: string;

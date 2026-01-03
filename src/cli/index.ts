@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { validateCommand } from './commands/validate';
-import { checkCommand } from './commands/check';
-import { reportCommand } from './commands/report';
+import { validateCommand } from './commands/validate.js';
+import { checkCommand } from './commands/check.js';
+import { reportCommand } from './commands/report.js';
 
 const program = new Command();
 

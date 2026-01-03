@@ -1,4 +1,4 @@
-import { displayError } from '../display';
+import { displayError } from '../display.js';
 
 interface ReportOptions {
   output?: string;
