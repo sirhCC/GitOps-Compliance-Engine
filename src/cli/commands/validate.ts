@@ -12,19 +12,14 @@ interface ValidateOptions {
   summary?: boolean;
 }
 
-export async function validateCommand(
-  path: string,
-  options: ValidateOptions
-): Promise<void> {
+export async function validateCommand(path: string, options: ValidateOptions): Promise<void> {
   try {
     // Load configuration
-    const config: ValidationConfig = options.config
-      ? await loadConfig(options.config)
-      : {};
+    const config: ValidationConfig = options.config ? await loadConfig(options.config) : {};
 
     // Find IaC files
     const files = await findIacFiles(path, options.format || 'terraform');
-    
+
     if (files.length === 0) {
       displayError(`No IaC files found in ${path}`);
       process.exit(1);
@@ -92,10 +87,7 @@ async function loadConfig(_configPath: string): Promise<ValidationConfig> {
   return {};
 }
 
-function shouldPass(
-  violations: Record<Severity, number>,
-  failOn: Severity
-): boolean {
+function shouldPass(violations: Record<Severity, number>, failOn: Severity): boolean {
   switch (failOn) {
     case 'error':
       return violations.error === 0;

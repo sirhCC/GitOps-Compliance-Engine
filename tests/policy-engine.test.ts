@@ -5,7 +5,7 @@ import type { IacResource } from '../src/types';
 describe('PolicyEngine', () => {
   it('should validate resources against enabled policies', () => {
     const engine = new PolicyEngine();
-    
+
     const resource: IacResource = {
       id: 'test-resource',
       type: 'aws_instance',
@@ -19,14 +19,14 @@ describe('PolicyEngine', () => {
     };
 
     const violations = engine.validateResources([resource]);
-    
+
     // Should have at least one violation (missing tags)
     expect(violations.length).toBeGreaterThan(0);
   });
 
   it('should detect missing required tags', () => {
     const engine = new PolicyEngine();
-    
+
     const resource: IacResource = {
       id: 'untagged-instance',
       type: 'aws_instance',
@@ -39,14 +39,14 @@ describe('PolicyEngine', () => {
 
     const violations = engine.validateResources([resource]);
     const tagViolation = violations.find((v) => v.ruleId === 'required-tags');
-    
+
     expect(tagViolation).toBeDefined();
     expect(tagViolation?.severity).toBe('warning');
   });
 
   it('should detect public access violations', () => {
     const engine = new PolicyEngine();
-    
+
     const resource: IacResource = {
       id: 'public-db',
       type: 'aws_db_instance',
@@ -61,14 +61,14 @@ describe('PolicyEngine', () => {
 
     const violations = engine.validateResources([resource]);
     const publicViolation = violations.find((v) => v.ruleId === 'no-public-access');
-    
+
     expect(publicViolation).toBeDefined();
     expect(publicViolation?.severity).toBe('error');
   });
 
   it('should detect large instance types', () => {
     const engine = new PolicyEngine();
-    
+
     const resource: IacResource = {
       id: 'large-instance',
       type: 'aws_instance',
@@ -83,14 +83,14 @@ describe('PolicyEngine', () => {
 
     const violations = engine.validateResources([resource]);
     const costViolation = violations.find((v) => v.ruleId === 'cost-large-instance');
-    
+
     expect(costViolation).toBeDefined();
     expect(costViolation?.category).toBe('cost');
   });
 
   it('should validate naming conventions', () => {
     const engine = new PolicyEngine();
-    
+
     const badResource: IacResource = {
       id: 'MyBadName',
       type: 'aws_s3_bucket',
@@ -103,7 +103,7 @@ describe('PolicyEngine', () => {
 
     const violations = engine.validateResources([badResource]);
     const namingViolation = violations.find((v) => v.ruleId === 'naming-convention');
-    
+
     expect(namingViolation).toBeDefined();
   });
 
@@ -113,7 +113,7 @@ describe('PolicyEngine', () => {
         disabled: ['naming-convention'],
       },
     });
-    
+
     const resource: IacResource = {
       id: 'MyBadName',
       type: 'aws_s3_bucket',
@@ -126,7 +126,7 @@ describe('PolicyEngine', () => {
 
     const violations = engine.validateResources([resource]);
     const namingViolation = violations.find((v) => v.ruleId === 'naming-convention');
-    
+
     expect(namingViolation).toBeUndefined();
   });
 });

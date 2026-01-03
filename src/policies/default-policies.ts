@@ -64,7 +64,7 @@ export const defaultPolicies: PolicyRule[] = [
     evaluate: (resource: IacResource): PolicyViolation | null => {
       // Check for public access patterns
       const props = resource.properties;
-      
+
       if (props.public === true || props.publicly_accessible === true) {
         return {
           ruleId: 'no-public-access',
@@ -96,7 +96,7 @@ export const defaultPolicies: PolicyRule[] = [
     evaluate: (resource: IacResource): PolicyViolation | null => {
       // Simple naming check: lowercase with hyphens
       const validNamePattern = /^[a-z0-9-]+$/;
-      
+
       if (!validNamePattern.test(resource.id)) {
         return {
           ruleId: 'naming-convention',
@@ -127,7 +127,7 @@ export const defaultPolicies: PolicyRule[] = [
     enabled: true,
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const instanceType = resource.properties.instance_type as string | undefined;
-      
+
       // Simplified check for large instance types
       if (instanceType && (instanceType.includes('xlarge') || instanceType.includes('metal'))) {
         return {

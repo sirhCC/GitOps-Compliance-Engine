@@ -27,11 +27,11 @@ export async function parseIacFile(filePath: string, format: string): Promise<Pa
 function parseTerraform(content: string, filePath: string): ParseResult {
   // Simplified parsing - in production, use @hashicorp/hcl2-parser or similar
   const resources: IacResource[] = [];
-  
+
   // Basic regex to extract resource blocks (not production-ready)
   const resourceRegex = /resource\s+"([^"]+)"\s+"([^"]+)"\s*{/g;
   let match;
-  
+
   while ((match = resourceRegex.exec(content)) !== null) {
     const [, type, name] = match;
     resources.push({
