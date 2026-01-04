@@ -99,9 +99,11 @@ resource "aws_db_instance" "bad_db" {
         // Should not reach here
         expect(true).toBe(false);
       } catch (error: unknown) {
-        const err = error as { code: number; stdout: string };
+        const err = error as { code: number; stdout: string; stderr: string };
         expect(err.code).toBe(1);
-        expect(err.stdout).toContain('FAILED');
+        // The output goes to stdout even on error
+        const output = err.stdout || err.stderr || '';
+        expect(output).toContain('FAILED');
       }
 
       // Clean up
