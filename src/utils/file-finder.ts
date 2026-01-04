@@ -1,4 +1,4 @@
-import { glob } from 'fast-glob';
+import fg from 'fast-glob';
 import { resolve } from 'path';
 
 /**
@@ -7,7 +7,7 @@ import { resolve } from 'path';
 export async function findIacFiles(path: string, format: string): Promise<string[]> {
   const patterns = getGlobPatterns(format);
 
-  const files = await glob(patterns, {
+  const files = await fg(patterns, {
     cwd: resolve(path),
     absolute: true,
     ignore: ['**/node_modules/**', '**/.terraform/**', '**/dist/**', '**/build/**'],
