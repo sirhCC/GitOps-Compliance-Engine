@@ -5,9 +5,11 @@ import { parse as parseYaml } from 'yaml';
 /**
  * Parse an IaC file and extract resources
  */
-export async function parseIacFile(filePath: string, format: string): Promise<ParseResult> {
+export async function parseIacFile(filePath: string, format?: string): Promise<ParseResult> {
   const content = await readFile(filePath, 'utf-8');
-  const iacFormat = format as IacFormat;
+  
+  // Auto-detect format if not provided
+  const iacFormat = format ? (format as IacFormat) : detectFormat(filePath, content);
 
   switch (iacFormat) {
     case 'terraform':
@@ -17,18 +19,55 @@ export async function parseIacFile(filePath: string, format: string): Promise<Pa
     case 'cloudformation':
       return parseCloudFormation(content, filePath);
     default:
-      throw new Error(`Unsupported IaC format: ${format}`);
+      throw new Error(`Unsupported IaC format: ${iacFormat}`);
   }
 }
 
 /**
+ * Auto-detect IaC format from file path and content
+ */
+function detectFormat(filePath: string, content: string): IacFormat {
+  const fileName = filePath.toLowerCase();
+  
+  // Detect by file extension
+  if (fileName.endsWith('.tf') || fileName.endsWith('.tfvars')) {
+    return 'terraform';
+  }
+  
+  if (fileName.includes('pulumi') && (fileName.endsWith('.yaml') || fileName.endsWith('.yml'))) {
+    return 'pulumi';
+  }
+  
+  if (fileName.includes('cloudformation') || fileName.endsWith('.template.json') || 
+      fileName.endsWith('.template.yaml') || fileName.endsWith('.template.yml')) {
+    return 'cloudformation';
+  }
+  
+  // Detect by content
+  if (content.includes('resource "') || content.includes('provider "') || content.includes('terraform {')) {
+    return 'terraform';
+  }
+  
+  if (content.includes('AWSTemplateFormatVersion') || content.includes('Resources:')) {
+    return 'cloudformation';
+  }
+  
+  if (content.includes('runtime:') && content.includes('name:')) {
+    return 'pulumi';
+  }
+  
+  // Default to terraform as fallback
+  return 'terraform';
+}
+
+/**
  * Parse Terraform HCL files
- * Simplified parser - extracts resources with key properties
+ * Enhanced parser - extracts resources, data sources with improved property extraction
  */
 function parseTerraform(content: string, filePath: string): ParseResult {
   const resources: IacResource[] = [];
 
-  // Find resource blocks with enhanced property extraction
+  // Find resource blocks
   const resourceRegex = /resource\s+"([^"]+)"\s+"([^"]+)"\s*\{/g;
   let match;
 
@@ -43,6 +82,26 @@ function parseTerraform(content: string, filePath: string): ParseResult {
     resources.push({
       id: name,
       type,
+      properties,
+      location: {
+        file: filePath,
+        line: startLine,
+      },
+    });
+  }
+
+  // Find data blocks (treated as resources for validation)
+  const dataRegex = /data\s+"([^"]+)"\s+"([^"]+)"\s*\{/g;
+  while ((match = dataRegex.exec(content)) !== null) {
+    const [, type, name] = match;
+    const startLine = content.substring(0, match.index).split('\n').length;
+    const startPos = match.index + match[0].length;
+
+    const properties = extractTerraformProperties(content, startPos);
+
+    resources.push({
+      id: `data.${name}`,
+      type: `data.${type}`,
       properties,
       location: {
         file: filePath,
@@ -85,8 +144,18 @@ function extractTerraformProperties(content: string, startPos: number): Record<s
     const trimmed = line.trim();
 
     // Skip empty lines and comments
-    if (!trimmed || trimmed.startsWith('#')) {
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) {
       i++;
+      continue;
+    }
+
+    // Match arrays: key = [...]
+    const arrayMatch = trimmed.match(/^(\w+)\s*=\s*\[/);
+    if (arrayMatch) {
+      const [, key] = arrayMatch;
+      const arrayValue = extractArrayValue(blockContent, i, lines);
+      properties[key] = arrayValue.value;
+      i = arrayValue.nextIndex;
       continue;
     }
 
@@ -109,7 +178,7 @@ function extractTerraformProperties(content: string, startPos: number): Record<s
         }
 
         // Parse key = value in nested block
-        const nestedKvMatch = nestedLine.match(/^(\w+)\s*=\s*(.+?)(?:\s*#.*)?$/);
+        const nestedKvMatch = nestedLine.match(/^(\w+)\s*=\s*(.+?)(?:\s*[#/].*)?$/);
         if (nestedKvMatch) {
           const [, nestedKey, nestedValue] = nestedKvMatch;
           nestedBlock[nestedKey] = parseValue(nestedValue.trim());
@@ -124,7 +193,7 @@ function extractTerraformProperties(content: string, startPos: number): Record<s
     }
 
     // Match: key = value or key = "value"
-    const kvMatch = trimmed.match(/^(\w+)\s*=\s*(.+?)(?:\s*#.*)?$/);
+    const kvMatch = trimmed.match(/^(\w+)\s*=\s*(.+?)(?:\s*[#/].*)?$/);
     if (kvMatch) {
       const [, key, value] = kvMatch;
       properties[key] = parseValue(value.trim());
@@ -134,6 +203,71 @@ function extractTerraformProperties(content: string, startPos: number): Record<s
   }
 
   return properties;
+}
+
+/**
+ * Extract array value from Terraform
+ */
+function extractArrayValue(
+  _blockContent: string,
+  startLine: number,
+  lines: string[]
+): { value: unknown[]; nextIndex: number } {
+  let i = startLine;
+  let bracketDepth = 0;
+  let currentValue = '';
+
+  // Find the opening bracket
+  const startLineContent = lines[i];
+  const bracketIndex = startLineContent.indexOf('[');
+  if (bracketIndex !== -1) {
+    currentValue = startLineContent.substring(bracketIndex + 1);
+    bracketDepth = 1;
+  }
+
+  // If bracket closes on same line
+  if (currentValue.includes(']')) {
+    const closingIndex = currentValue.indexOf(']');
+    const arrayContent = currentValue.substring(0, closingIndex);
+    
+    // Split by comma and parse values
+    const values = arrayContent.split(',').map((v) => v.trim()).filter((v) => v);
+    return {
+      value: values.map((v) => parseValue(v)),
+      nextIndex: i + 1,
+    };
+  }
+
+  i++;
+
+  // Multi-line array
+  while (i < lines.length && bracketDepth > 0) {
+    const line = lines[i].trim();
+    
+    if (line.includes('[')) bracketDepth++;
+    if (line.includes(']')) {
+      bracketDepth--;
+      if (bracketDepth === 0) {
+        const closingIndex = line.indexOf(']');
+        currentValue += ' ' + line.substring(0, closingIndex);
+        break;
+      }
+    }
+    
+    currentValue += ' ' + line;
+    i++;
+  }
+
+  // Parse array content
+  const values = currentValue
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => v && v !== ']');
+  
+  return {
+    value: values.map((v) => parseValue(v)),
+    nextIndex: i + 1,
+  };
 }
 
 /**
