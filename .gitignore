@@ -41,3 +41,12 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# Generated reports
+report.json
+report.md
+report.html
+*.report.*
+
+# Test fixtures
+tests/fixtures/
