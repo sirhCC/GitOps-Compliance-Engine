@@ -1,13 +1,16 @@
 import { PolicyRule, IacResource, PolicyViolation, ValidationConfig } from '../types.js';
 import { defaultPolicies } from './default-policies.js';
+import { minimatch } from 'minimatch';
 
 /**
  * Policy evaluation engine
  */
 export class PolicyEngine {
   private policies: PolicyRule[];
+  private config: ValidationConfig;
 
   constructor(config: ValidationConfig = {}) {
+    this.config = config;
     this.policies = this.loadPolicies(config);
   }
 
@@ -18,6 +21,11 @@ export class PolicyEngine {
     const violations: PolicyViolation[] = [];
 
     for (const resource of resources) {
+      // Check if resource should be excluded
+      if (this.shouldExcludeResource(resource)) {
+        continue;
+      }
+
       for (const policy of this.policies) {
         if (!policy.enabled) continue;
 
@@ -29,6 +37,41 @@ export class PolicyEngine {
     }
 
     return violations;
+  }
+
+  /**
+   * Check if a resource should be excluded from validation
+   */
+  private shouldExcludeResource(resource: IacResource): boolean {
+    const excludePatterns = this.config.exclude;
+    
+    if (!excludePatterns) {
+      return false;
+    }
+
+    // Check file exclusions
+    if (excludePatterns.files && excludePatterns.files.length > 0) {
+      for (const pattern of excludePatterns.files) {
+        if (minimatch(resource.location.file, pattern, { matchBase: true })) {
+          return true;
+        }
+      }
+    }
+
+    // Check resource type exclusions
+    if (excludePatterns.resources && excludePatterns.resources.length > 0) {
+      for (const pattern of excludePatterns.resources) {
+        if (minimatch(resource.type, pattern)) {
+          return true;
+        }
+        // Also check against resource ID
+        if (minimatch(resource.id, pattern)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
