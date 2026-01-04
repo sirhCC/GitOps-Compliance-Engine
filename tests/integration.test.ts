@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, mkdir, rm } from 'fs/promises';
@@ -218,5 +218,14 @@ Resources:
       // Clean up
       await rm(join(testDir, 'cloudformation.yaml'));
     });
+  });
+
+  afterAll(async () => {
+    // Clean up test fixtures directory
+    try {
+      await rm(testDir, { recursive: true, force: true });
+    } catch (error) {
+      // Ignore errors if directory doesn't exist
+    }
   });
 });
