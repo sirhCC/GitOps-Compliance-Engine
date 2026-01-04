@@ -3,38 +3,37 @@
 ## 🔴 Critical (Blocking Core Functionality)
 
 ### CLI Commands
-- [ ] **Implement `check` command** (`src/cli/commands/check.ts`)
-  - Should be a simplified wrapper around validate
-  - Use sensible defaults (no config required)
-  - Quick feedback mode
+- [x] **Implement `check` command** (`src/cli/commands/check.ts`)
+  - ✅ Simplified wrapper around validate with sensible defaults
+  - ✅ Uses error severity and shows summary
 
-- [ ] **Implement `report` command** (`src/cli/commands/report.ts`)
-  - Generate JSON reports
-  - Generate YAML reports
-  - Generate Markdown reports
-  - Generate HTML reports
-  - Save to specified output file
+- [x] **Implement `report` command** (`src/cli/commands/report.ts`)
+  - ✅ Generate JSON reports
+  - ✅ Generate YAML reports
+  - ✅ Generate Markdown reports
+  - ✅ Generate HTML reports
+  - ✅ Save to specified output file
 
-- [ ] **Implement display module** (`src/cli/display.ts`)
-  - `displayResults()` - Show validation results with colors
-  - `displayError()` - Show error messages
-  - `displayViolation()` - Format individual violations
-  - `displaySummary()` - Show validation summary
-  - Use chalk for colored output
-  - Show file paths, line numbers, severity badges
+- [x] **Implement display module** (`src/cli/display.ts`)
+  - ✅ `displayResults()` - Show validation results with colors
+  - ✅ `displayError()` - Show error messages
+  - ✅ `displayViolation()` - Format individual violations
+  - ✅ `displaySummary()` - Show validation summary
+  - ✅ Use chalk for colored output
+  - ✅ Show file paths, line numbers, severity badges
 
 ### Configuration
-- [ ] **Config file loading** (`src/cli/commands/validate.ts`)
-  - Load and parse `gce.config.json`
-  - Validate config schema with Zod
-  - Support for policy enable/disable
-  - Support for severity thresholds
-  - Support for exclude patterns
-  - Handle missing config gracefully
+- [x] **Config file loading** (`src/cli/commands/validate.ts`)
+  - ✅ Load and parse `gce.config.json`
+  - ✅ Validate config schema with Zod
+  - ✅ Support for policy enable/disable
+  - ✅ Support for severity thresholds
+  - ✅ Support for exclude patterns
+  - ✅ Handle missing config gracefully
 
-- [ ] **Config type validation**
-  - Create Zod schema for `ValidationConfig`
-  - Add config validation to ensure correctness
+- [x] **Config type validation**
+  - ✅ Create Zod schema for `ValidationConfig`
+  - ✅ Add config validation to ensure correctness
 
 ## 🟡 High Priority (Essential Features)
 
