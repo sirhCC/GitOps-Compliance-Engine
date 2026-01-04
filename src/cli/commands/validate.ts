@@ -3,6 +3,29 @@ import { findIacFiles } from '../../utils/file-finder.js';
 import { parseIacFile } from '../../parsers/index.js';
 import { PolicyEngine } from '../../policies/engine.js';
 import { displayResults, displayError } from '../display.js';
+import { readFile } from 'fs/promises';
+import { z } from 'zod';
+
+// Zod schema for config validation
+const ValidationConfigSchema = z.object({
+  policies: z
+    .object({
+      enabled: z.array(z.string()).optional(),
+      disabled: z.array(z.string()).optional(),
+    })
+    .optional(),
+  severity: z
+    .object({
+      failOn: z.enum(['error', 'warning', 'info']).optional(),
+    })
+    .optional(),
+  exclude: z
+    .object({
+      files: z.array(z.string()).optional(),
+      resources: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
 
 interface ValidateOptions {
   config?: string;
@@ -82,10 +105,33 @@ export async function validateCommand(path: string, options: ValidateOptions): P
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/require-await
-async function loadConfig(_configPath: string): Promise<ValidationConfig> {
-  // TODO: Implement config file loading
-  return {};
+async function loadConfig(configPath: string): Promise<ValidationConfig> {
+  try {
+    const content = await readFile(configPath, 'utf-8');
+    const parsed = JSON.parse(content);
+    
+    // Validate config with Zod
+    const validated = ValidationConfigSchema.parse(parsed);
+    
+    return validated;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const messages = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+      throw new Error(`Invalid config file: ${messages}`);
+    }
+    
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        throw new Error(`Config file not found: ${configPath}`);
+      }
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON in config file: ${configPath}`);
+      }
+      throw error;
+    }
+    
+    throw new Error('Failed to load config file');
+  }
 }
 
 function shouldPass(violations: Record<Severity, number>, failOn: Severity): boolean {
