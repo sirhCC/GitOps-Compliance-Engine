@@ -114,7 +114,7 @@ function generateYamlReport(summary: ValidationSummary): string {
 
 function generateMarkdownReport(summary: ValidationSummary): string {
   let report = '# GitOps Compliance Report\n\n';
-  
+
   // Summary section
   report += '## Summary\n\n';
   report += `- **Files Scanned:** ${summary.totalFiles}\n`;
@@ -144,24 +144,24 @@ function generateMarkdownReport(summary: ValidationSummary): string {
   // Detailed violations
   if (summary.totalViolations > 0) {
     report += '## Detailed Violations\n\n';
-    
+
     for (const result of summary.results) {
       if (result.violations.length > 0) {
         report += `### ${result.file}\n\n`;
-        
+
         for (const violation of result.violations) {
-          const severityEmoji = violation.severity === 'error' ? '🔴' : 
-                                violation.severity === 'warning' ? '🟡' : '🔵';
+          const severityEmoji =
+            violation.severity === 'error' ? '🔴' : violation.severity === 'warning' ? '🟡' : '🔵';
           report += `${severityEmoji} **${violation.ruleName}** (${violation.severity})\n\n`;
           report += `- **Resource:** ${violation.resource.type} \`${violation.resource.id}\`\n`;
           report += `- **Location:** ${violation.resource.location.file}:${violation.resource.location.line || 0}\n`;
           report += `- **Category:** ${violation.category}\n`;
           report += `- **Message:** ${violation.message}\n`;
-          
+
           if (violation.remediation) {
             report += `- **Remediation:** ${violation.remediation}\n`;
           }
-          
+
           report += '\n';
         }
       }
@@ -169,7 +169,7 @@ function generateMarkdownReport(summary: ValidationSummary): string {
   }
 
   report += `---\n\n*Generated on ${new Date().toISOString()}*\n`;
-  
+
   return report;
 }
 
@@ -354,11 +354,11 @@ function generateHtmlReport(summary: ValidationSummary): string {
 
   if (summary.totalViolations > 0) {
     html += '<h2 style="margin-top: 40px;">Detailed Violations</h2>\n';
-    
+
     for (const result of summary.results) {
       if (result.violations.length > 0) {
         html += `<h3 style="margin-top: 30px;">${result.file}</h3>\n`;
-        
+
         for (const violation of result.violations) {
           html += `
   <div class="violation-item ${violation.severity}">
@@ -373,7 +373,7 @@ function generateHtmlReport(summary: ValidationSummary): string {
       <p><strong>Message:</strong> ${violation.message}</p>
     </div>
 `;
-          
+
           if (violation.remediation) {
             html += `
     <div class="remediation">
@@ -381,7 +381,7 @@ function generateHtmlReport(summary: ValidationSummary): string {
     </div>
 `;
           }
-          
+
           html += '  </div>\n';
         }
       }
