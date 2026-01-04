@@ -44,7 +44,7 @@ export class PolicyEngine {
    */
   private shouldExcludeResource(resource: IacResource): boolean {
     const excludePatterns = this.config.exclude;
-    
+
     if (!excludePatterns) {
       return false;
     }
