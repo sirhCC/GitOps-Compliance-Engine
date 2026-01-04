@@ -1,0 +1,124 @@
+{
+  "totalFiles": 1,
+  "totalResources": 4,
+  "totalViolations": 6,
+  "violationsBySeverity": {
+    "error": 1,
+    "warning": 3,
+    "info": 2
+  },
+  "violationsByCategory": {
+    "cost": 1,
+    "security": 1,
+    "compliance": 0,
+    "tagging": 2,
+    "naming": 2
+  },
+  "passed": false,
+  "results": [
+    {
+      "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+      "format": "terraform",
+      "violations": [
+        {
+          "ruleId": "required-tags",
+          "ruleName": "Required Tags",
+          "severity": "warning",
+          "category": "tagging",
+          "message": "Resource is missing tags: Environment, Owner, Project",
+          "resource": {
+            "id": "web_server",
+            "type": "aws_instance",
+            "location": {
+              "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+              "line": 3
+            }
+          },
+          "remediation": "Add missing tags: Environment, Owner, Project"
+        },
+        {
+          "ruleId": "naming-convention",
+          "ruleName": "Naming Convention",
+          "severity": "info",
+          "category": "naming",
+          "message": "Resource name \"web_server\" does not follow naming convention",
+          "resource": {
+            "id": "web_server",
+            "type": "aws_instance",
+            "location": {
+              "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+              "line": 3
+            }
+          },
+          "remediation": "Use lowercase letters, numbers, and hyphens only"
+        },
+        {
+          "ruleId": "cost-large-instance",
+          "ruleName": "Large Instance Warning",
+          "severity": "warning",
+          "category": "cost",
+          "message": "Instance type \"t2.xlarge\" may incur high costs",
+          "resource": {
+            "id": "web_server",
+            "type": "aws_instance",
+            "location": {
+              "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+              "line": 3
+            }
+          },
+          "remediation": "Consider using a smaller instance type or verify this is necessary"
+        },
+        {
+          "ruleId": "required-tags",
+          "ruleName": "Required Tags",
+          "severity": "warning",
+          "category": "tagging",
+          "message": "Resource is missing required tags",
+          "resource": {
+            "id": "PublicBucket",
+            "type": "aws_s3_bucket",
+            "location": {
+              "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+              "line": 13
+            }
+          },
+          "remediation": "Add tags: Environment, Owner, Project"
+        },
+        {
+          "ruleId": "naming-convention",
+          "ruleName": "Naming Convention",
+          "severity": "info",
+          "category": "naming",
+          "message": "Resource name \"PublicBucket\" does not follow naming convention",
+          "resource": {
+            "id": "PublicBucket",
+            "type": "aws_s3_bucket",
+            "location": {
+              "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+              "line": 13
+            }
+          },
+          "remediation": "Use lowercase letters, numbers, and hyphens only"
+        },
+        {
+          "ruleId": "no-public-access",
+          "ruleName": "No Public Access",
+          "severity": "error",
+          "category": "security",
+          "message": "Resource is configured for public access",
+          "resource": {
+            "id": "database",
+            "type": "aws_db_instance",
+            "location": {
+              "file": "D:/GitOps Compliance Engine/examples/sample.tf",
+              "line": 17
+            }
+          },
+          "remediation": "Set public access to false and use VPN or private networking"
+        }
+      ],
+      "resourceCount": 4,
+      "passed": false
+    }
+  ]
+}
