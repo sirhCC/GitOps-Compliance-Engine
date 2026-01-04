@@ -59,17 +59,37 @@ Options:
 
 ## Default Policies
 
-### Tagging
+### Tagging (6 policies)
 - **required-tags** (warning): Ensures resources have Environment, Owner, Project tags
+- **cost-center-tag** (warning): Cost center tags for billing allocation
+- **expiration-tag** (info): Expiration dates for temporary resources
+- **backup-tag** (warning): Backup policy tags for data resources
 
-### Security
+### Security (6 policies)
 - **no-public-access** (error): Prevents publicly accessible resources
+- **encryption-at-rest** (error): Requires encryption for data storage
+- **encryption-in-transit** (error): Requires HTTPS/TLS for data transmission
+- **no-hardcoded-secrets** (error): Detects hardcoded secrets in configuration
+- **security-group-unrestricted** (error): Prevents overly permissive security groups
+- **iam-wildcard-actions** (warning): Warns about wildcard IAM permissions
 
-### Naming
+### Naming (1 policy)
 - **naming-convention** (info): Enforces lowercase-with-hyphens pattern
 
-### Cost
+### Cost (6 policies)
 - **cost-large-instance** (warning): Warns about expensive instance types
+- **cost-unattached-volumes** (warning): Detects unused EBS volumes
+- **cost-gp2-to-gp3** (info): Suggests cheaper GP3 volumes
+- **cost-oversized-volume** (warning): Warns about large storage allocations
+- **cost-multi-az** (info): Alerts about Multi-AZ cost implications
+- **cost-nat-gateway** (info): NAT Gateway cost awareness
+
+### Compliance (3 policies)
+- **compliance-logging** (error): Requires audit logging
+- **compliance-versioning** (warning): Requires S3 versioning
+- **compliance-mfa-delete** (info): MFA delete for production S3 buckets
+
+**Total: 22 policies** (13 enabled by default)
 
 ## Configuration
 
