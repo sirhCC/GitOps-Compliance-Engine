@@ -2,6 +2,10 @@
 
 Enterprise-grade CLI tool that validates Infrastructure-as-Code (Terraform, Pulumi, CloudFormation) against organizational policies before deployment.
 
+[![Tests](https://img.shields.io/badge/tests-25%20passing-success)]()
+[![Policies](https://img.shields.io/badge/policies-22%20total-blue)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)]()
+
 ## Quick Start
 
 ```bash
@@ -14,18 +18,22 @@ npm run build
 # Run validation on current directory
 node dist/cli/index.js validate .
 
-# Or use the CLI alias (after npm link)
+# Or link globally and use the CLI alias
+npm link
 gce validate ./infrastructure
 ```
 
 ## Features
 
-- ✅ **Multi-IaC Support**: Terraform, Pulumi, CloudFormation
-- ✅ **Policy Categories**: Cost, Security, Compliance, Tagging, Naming
-- ✅ **Severity Levels**: Error, Warning, Info
-- ✅ **Flexible Configuration**: Enable/disable policies, set fail thresholds
+- ✅ **Multi-IaC Support**: Terraform, Pulumi, CloudFormation with auto-detection
+- ✅ **22 Built-in Policies**: Across Cost, Security, Compliance, Tagging, and Naming
+- ✅ **Severity Levels**: Error, Warning, Info with configurable thresholds
+- ✅ **Flexible Configuration**: Enable/disable policies, exclude patterns
 - ✅ **Rich Output**: Color-coded CLI output with remediation suggestions
+- ✅ **Multiple Report Formats**: JSON, YAML, Markdown, HTML
 - ✅ **CI/CD Ready**: Exit codes for pipeline integration
+- ✅ **Exclude Patterns**: Skip specific files or resources
+- ✅ **Comprehensive Tests**: 25 tests with integration coverage
 
 ## Commands
 
@@ -98,18 +106,26 @@ Create a `gce.config.json` file:
 ```json
 {
   "policies": {
-    "enabled": ["required-tags", "no-public-access"],
-    "disabled": ["naming-convention"]
+    "enabled": ["required-tags", "no-public-access", "encryption-at-rest"],
+    "disabled": ["naming-convention", "cost-nat-gateway"]
   },
   "severity": {
     "failOn": "warning"
   },
   "exclude": {
-    "files": ["**/test/**"],
-    "resources": ["aws_s3_bucket_public_access_block"]
+    "files": ["**/test/**", "**/*.test.tf"],
+    "resources": ["aws_s3_bucket_public_access_block", "data.*"]
   }
 }
 ```
+
+### Configuration Options
+
+**`policies.enabled`**: Array of policy IDs to enable (overrides defaults)
+**`policies.disabled`**: Array of policy IDs to disable
+**`severity.failOn`**: Minimum severity to fail validation (`error`, `warning`, `info`)
+**`exclude.files`**: Glob patterns for files to skip
+**`exclude.resources`**: Patterns for resource types/IDs to skip
 
 ## Examples
 
@@ -118,26 +134,103 @@ Create a `gce.config.json` file:
 gce validate ./terraform --format terraform --severity error
 ```
 
-### Validate with Config
+###
+
+### Exclude Specific Resources
 ```bash
+# Using config file with exclude patterns
 gce validate ./infrastructure -c gce.config.json
 ```
 
-### Generate HTML Report
-```bash
-gce report ./terraform -o compliance-report.html --format html
-```
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run in dev mode
+### Enable Optional Policies
+```json
+{
+  "policies": {
+    "enabled": [
+      "required-tags",
+      "cost-center-tag",
+      "backup-tag",
+      "compliance (watch mode)
 npm run dev
 
 # Run tests
+npm test
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests with coverage
+npm run test:coverage
+
+# Lint code
+npm run lint
+
+# Fix linting issues
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Full validation (typecheck + lint + test)
+npm run validate
+```
+
+## Testing
+
+The project includes comprehensive test coverage:
+
+- **Unit Tests**: Parser and policy engine tests
+- **Integration Tests**: Full CLI workflow tests
+- **25 Total Tests**: All passing with coverage tracking
+
+```bash
+# Run specific test file
+npm test -- tests/parsers.test.ts
+
+# Watch mode for development
+npm run test:watch
+## Development
+
+│   ├── commands/        # validate, check, report commands
+│   ├── display.ts       # Color-coded output formatting
+│   └── index.ts         # CLI entry point
+├── parsers/
+│   └── index.ts         # IaC format parsers (Terraform, Pulumi, CF)
+├── policies/
+│   ├── engine.ts        # Policy evaluation engine
+│   └── default-policies.ts  # 22 built-in policies
+├── ✅ Phase 1 (Complete)
+- [x] CLI structure with Commander.js
+- [x] Terraform, Pulumi, CloudFormation parsing
+- [x] Format auto-detection
+- [x] Policy engine with 22 rules
+- [x] Rich console output with colors
+- [x] Config file loading with Zod validation
+- [x] Report generation (JSON, YAML, Markdown, HTML)
+- [x] Exclude patterns support
+- [x] Comprehensive test suite (25 tests)
+
+### 🚧 Phase 2 (In Progress)
+- [ ] Enhanced HCL parsing with @hashicorp/hcl2-parser
+- [ ] Pulumi TypeScript program parsing
+- [ ] CloudFormation intrinsic functions
+- [ ] Custom policy authoring API
+- [ ] Watch mode for development
+- [ ] Performance optimizations
+
+### 📋 Phase 3 (Planned)
+- [ ] Policy marketplace/sharing
+- [ ] Cost estimation integration
+- [ ] GitHub Action + GitLab CI templates
+- [ ] VS Code extension
+- [ ] Additional compliance frameworks (SOC2, PCI-DSS, HIPAA)
+
+### 🔮 Phase 4 (Future)
+- [ ] Team approval workflows
+- [ ] Policy history and versioning
+- [ ] Web dashboard
+- [ ] API server mode
+- [ ] Terraform/Pulumi provider integration
 npm test
 
 # Run tests with coverage
@@ -162,8 +255,64 @@ src/
 ```
 
 ## Roadmap
+### CI/CD Pipelines
 
-### Phase 1 (Current)
+**GitHub Actions:**
+```yaml
+- name: Validate Infrastructure
+  run: |
+    npm install
+    npm run build
+    node dist/cli/index.js validate ./terraform --severity error
+```
+
+**GitLab CI:**
+```yaml
+validate:
+  script:
+    - npm install && npm run build
+    - node dist/cli/index.js validate ./infrastructure -c .gce.config.json
+  artifacts:
+    reports:
+      - compliance-report.json
+```
+
+### Pre-commit Hooks
+
+Add to `.git/hooks/pre-commit`:
+```bash
+#!/bin/bash
+gce validate ./terraform --fail-fast --severity error
+```
+
+### Integration Points
+
+- **Infrastructure-Drift-Detector**: Validate before `terraform apply`, detect drift after
+- **Zero-Trust-Scanner**: Run security scans on proposed infrastructure
+- **Terraform Cloud**: Pre-apply policy validation
+- **AWS CodePipeline**: Stage for compliance checks
+
+## Contributing
+
+Contributions are welcome! Areas for contribution:
+
+- Additional policies for AWS, Azure, GCP
+- Improved HCL parsing
+- New report formats
+- Documentation improvements
+- Bug fixes and performance improvements
+
+## License
+
+MIT
+
+## Author
+
+sirhCC
+
+---
+
+**Status**: Production Ready | **Version**: 0.1.0 | **Tests**: 25 Passing
 - [x] Basic CLI structure
 - [x] Terraform parsing (simplified)
 - [x] Core policy engine
