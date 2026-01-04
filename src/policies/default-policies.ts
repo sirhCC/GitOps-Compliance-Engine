@@ -95,9 +95,9 @@ export const defaultPolicies: PolicyRule[] = [
     enabled: true,
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
-      
+
       // Check for encryption settings
-      const hasEncryption = 
+      const hasEncryption =
         props.encrypted === true ||
         props.encryption === true ||
         props.encryption_enabled === true ||
@@ -146,20 +146,22 @@ export const defaultPolicies: PolicyRule[] = [
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
       const sensitiveKeys = ['password', 'secret', 'api_key', 'token', 'private_key'];
-      
+
       for (const [key, value] of Object.entries(props)) {
         const lowerKey = key.toLowerCase();
-        
+
         // Check if key name suggests sensitive data
         if (sensitiveKeys.some((s) => lowerKey.includes(s))) {
           // Check if value looks hardcoded (not a reference/variable)
-          if (typeof value === 'string' && 
-              !value.startsWith('var.') && 
-              !value.startsWith('${') &&
-              !value.startsWith('data.') &&
-              !value.includes('aws_secretsmanager') &&
-              !value.includes('vault') &&
-              value.length > 0) {
+          if (
+            typeof value === 'string' &&
+            !value.startsWith('var.') &&
+            !value.startsWith('${') &&
+            !value.startsWith('data.') &&
+            !value.includes('aws_secretsmanager') &&
+            !value.includes('vault') &&
+            value.length > 0
+          ) {
             return {
               ruleId: 'no-hardcoded-secrets',
               ruleName: 'No Hardcoded Secrets',
@@ -189,30 +191,32 @@ export const defaultPolicies: PolicyRule[] = [
     severity: 'error',
     enabled: true,
     evaluate: (resource: IacResource): PolicyViolation | null => {
-      if (!resource.type.includes('security_group') && 
-          !resource.type.includes('SecurityGroup')) {
+      if (!resource.type.includes('security_group') && !resource.type.includes('SecurityGroup')) {
         return null;
       }
 
       const props = resource.properties;
-      const ingress = props.ingress as Array<Record<string, unknown>> | Record<string, unknown> | undefined;
-      
+      const ingress = props.ingress as
+        | Array<Record<string, unknown>>
+        | Record<string, unknown>
+        | undefined;
+
       // Check ingress rules
       const rules = Array.isArray(ingress) ? ingress : ingress ? [ingress] : [];
-      
+
       for (const rule of rules) {
         const cidrBlocks = rule.cidr_blocks as string[] | undefined;
         const ipv6Cidr = rule.ipv6_cidr_blocks as string[] | undefined;
-        
+
         // Check for 0.0.0.0/0 (all traffic)
         if (cidrBlocks?.includes('0.0.0.0/0') || ipv6Cidr?.includes('::/0')) {
           const fromPort = rule.from_port;
-          
+
           // Allow common restricted ports but warn on wide open access
           if (fromPort === 80 || fromPort === 443) {
             continue;
           }
-          
+
           return {
             ruleId: 'security-group-unrestricted',
             ruleName: 'No Unrestricted Security Groups',
@@ -224,7 +228,8 @@ export const defaultPolicies: PolicyRule[] = [
               type: resource.type,
               location: resource.location,
             },
-            remediation: 'Restrict CIDR blocks to specific IP ranges or use security group references',
+            remediation:
+              'Restrict CIDR blocks to specific IP ranges or use security group references',
           };
         }
       }
@@ -242,12 +247,12 @@ export const defaultPolicies: PolicyRule[] = [
     enabled: true,
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
-      
+
       // Check load balancers for HTTPS
       if (resource.type.includes('load_balancer') || resource.type.includes('elb')) {
         const protocol = props.protocol as string | undefined;
         const listeners = props.listener as Array<Record<string, unknown>> | undefined;
-        
+
         if (protocol && protocol.toLowerCase() === 'http') {
           return {
             ruleId: 'encryption-in-transit',
@@ -263,7 +268,7 @@ export const defaultPolicies: PolicyRule[] = [
             remediation: 'Use HTTPS protocol with valid SSL/TLS certificates',
           };
         }
-        
+
         // Check listeners
         if (Array.isArray(listeners)) {
           for (const listener of listeners) {
@@ -305,9 +310,9 @@ export const defaultPolicies: PolicyRule[] = [
 
       const props = resource.properties;
       const policy = props.policy as string | Record<string, unknown> | undefined;
-      
+
       let policyObj: Record<string, unknown> | undefined;
-      
+
       if (typeof policy === 'string') {
         try {
           policyObj = JSON.parse(policy) as Record<string, unknown>;
@@ -317,17 +322,17 @@ export const defaultPolicies: PolicyRule[] = [
       } else if (typeof policy === 'object') {
         policyObj = policy;
       }
-      
+
       if (policyObj && policyObj.Statement) {
-        const statements = Array.isArray(policyObj.Statement) 
-          ? policyObj.Statement 
+        const statements = Array.isArray(policyObj.Statement)
+          ? policyObj.Statement
           : [policyObj.Statement];
-        
+
         for (const statement of statements) {
           const stmt = statement as Record<string, unknown>;
           const actions = stmt.Action as string | string[] | undefined;
           const actionList = Array.isArray(actions) ? actions : actions ? [actions] : [];
-          
+
           // Check for wildcard actions
           if (actionList.some((a) => a === '*' || a.endsWith(':*'))) {
             return {
@@ -569,6 +574,233 @@ export const defaultPolicies: PolicyRule[] = [
           },
           remediation: 'Consider NAT instances for dev/test environments or VPC endpoints',
         };
+      }
+
+      return null;
+    },
+  },
+
+  // Additional tagging policies
+  {
+    id: 'cost-center-tag',
+    name: 'Cost Center Tag Required',
+    description: 'Ensures resources have cost center tags for billing',
+    category: 'tagging',
+    severity: 'warning',
+    enabled: false, // Disabled by default
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const tags = resource.properties.tags as Record<string, string> | undefined;
+
+      if (!tags || !tags['CostCenter']) {
+        return {
+          ruleId: 'cost-center-tag',
+          ruleName: 'Cost Center Tag Required',
+          severity: 'warning',
+          category: 'tagging',
+          message: 'Resource is missing CostCenter tag for billing allocation',
+          resource: {
+            id: resource.id,
+            type: resource.type,
+            location: resource.location,
+          },
+          remediation: 'Add CostCenter tag with appropriate billing code',
+        };
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'expiration-tag',
+    name: 'Expiration Date Tag',
+    description: 'Ensures temporary resources have expiration dates',
+    category: 'tagging',
+    severity: 'info',
+    enabled: false, // Disabled by default
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const tags = resource.properties.tags as Record<string, string> | undefined;
+      const env = tags?.Environment || tags?.environment;
+
+      // Only check dev/test/staging environments
+      if (env && ['dev', 'test', 'staging', 'sandbox'].includes(env.toLowerCase())) {
+        if (!tags || !tags['ExpirationDate']) {
+          return {
+            ruleId: 'expiration-tag',
+            ruleName: 'Expiration Date Tag',
+            severity: 'info',
+            category: 'tagging',
+            message: 'Non-production resource missing ExpirationDate tag',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Add ExpirationDate tag (YYYY-MM-DD) for resource cleanup tracking',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'backup-tag',
+    name: 'Backup Policy Tag',
+    description: 'Ensures data resources have backup policy tags',
+    category: 'tagging',
+    severity: 'warning',
+    enabled: false, // Disabled by default
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      // Resources that typically need backups
+      const dataResources = [
+        'aws_db_instance',
+        'aws_rds_cluster',
+        'aws_ebs_volume',
+        'aws_efs_file_system',
+        'aws_dynamodb_table',
+      ];
+
+      if (dataResources.includes(resource.type)) {
+        const tags = resource.properties.tags as Record<string, string> | undefined;
+
+        if (!tags || !tags['BackupPolicy']) {
+          return {
+            ruleId: 'backup-tag',
+            ruleName: 'Backup Policy Tag',
+            severity: 'warning',
+            category: 'tagging',
+            message: 'Data resource missing BackupPolicy tag',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Add BackupPolicy tag (e.g., "daily", "weekly", "none")',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  // Compliance policies
+  {
+    id: 'compliance-logging',
+    name: 'Audit Logging Required',
+    description: 'Ensures resources have audit logging enabled',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false, // Disabled by default
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+
+      // Resources that should have logging
+      const needsLogging = [
+        'aws_s3_bucket',
+        'aws_cloudtrail',
+        'aws_db_instance',
+        'aws_rds_cluster',
+        'aws_api_gateway',
+        'aws_lb',
+      ];
+
+      if (needsLogging.includes(resource.type)) {
+        const hasLogging =
+          props.logging !== undefined ||
+          props.enabled_cloudwatch_logs_exports !== undefined ||
+          props.access_logs !== undefined ||
+          props.logging_config !== undefined;
+
+        if (!hasLogging) {
+          return {
+            ruleId: 'compliance-logging',
+            ruleName: 'Audit Logging Required',
+            severity: 'error',
+            category: 'compliance',
+            message: 'Resource does not have audit logging enabled',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable CloudWatch logs or access logging for compliance',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'compliance-versioning',
+    name: 'Versioning Required',
+    description: 'Ensures S3 buckets have versioning enabled',
+    category: 'compliance',
+    severity: 'warning',
+    enabled: false, // Disabled by default
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      if (resource.type === 'aws_s3_bucket') {
+        const props = resource.properties;
+        const versioning = props.versioning as Record<string, unknown> | undefined;
+
+        if (!versioning || versioning.enabled !== true) {
+          return {
+            ruleId: 'compliance-versioning',
+            ruleName: 'Versioning Required',
+            severity: 'warning',
+            category: 'compliance',
+            message: 'S3 bucket does not have versioning enabled',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable versioning for data protection and compliance',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'compliance-mfa-delete',
+    name: 'MFA Delete for S3',
+    description: 'Ensures critical S3 buckets require MFA for deletion',
+    category: 'compliance',
+    severity: 'info',
+    enabled: false, // Disabled by default
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      if (resource.type === 'aws_s3_bucket') {
+        const props = resource.properties;
+        const tags = props.tags as Record<string, string> | undefined;
+        const env = tags?.Environment;
+
+        // Only check production buckets
+        if (env?.toLowerCase() === 'production') {
+          const versioning = props.versioning as Record<string, unknown> | undefined;
+
+          if (!versioning || versioning.mfa_delete !== true) {
+            return {
+              ruleId: 'compliance-mfa-delete',
+              ruleName: 'MFA Delete for S3',
+              severity: 'info',
+              category: 'compliance',
+              message: 'Production S3 bucket should require MFA for deletion',
+              resource: {
+                id: resource.id,
+                type: resource.type,
+                location: resource.location,
+              },
+              remediation: 'Enable MFA delete in versioning configuration for production buckets',
+            };
+          }
+        }
       }
 
       return null;
