@@ -108,18 +108,18 @@ export async function validateCommand(path: string, options: ValidateOptions): P
 async function loadConfig(configPath: string): Promise<ValidationConfig> {
   try {
     const content = await readFile(configPath, 'utf-8');
-    const parsed = JSON.parse(content);
-    
+    const parsed = JSON.parse(content) as unknown;
+
     // Validate config with Zod
     const validated = ValidationConfigSchema.parse(parsed);
-    
+
     return validated;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const messages = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
       throw new Error(`Invalid config file: ${messages}`);
     }
-    
+
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
         throw new Error(`Config file not found: ${configPath}`);
@@ -129,7 +129,7 @@ async function loadConfig(configPath: string): Promise<ValidationConfig> {
       }
       throw error;
     }
-    
+
     throw new Error('Failed to load config file');
   }
 }
