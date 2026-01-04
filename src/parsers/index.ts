@@ -7,7 +7,7 @@ import { parse as parseYaml } from 'yaml';
  */
 export async function parseIacFile(filePath: string, format?: string): Promise<ParseResult> {
   const content = await readFile(filePath, 'utf-8');
-  
+
   // Auto-detect format if not provided
   const iacFormat = format ? (format as IacFormat) : detectFormat(filePath, content);
 
@@ -19,7 +19,7 @@ export async function parseIacFile(filePath: string, format?: string): Promise<P
     case 'cloudformation':
       return parseCloudFormation(content, filePath);
     default:
-      throw new Error(`Unsupported IaC format: ${iacFormat}`);
+      throw new Error(`Unsupported IaC format: ${String(iacFormat)}`);
   }
 }
 
@@ -28,34 +28,42 @@ export async function parseIacFile(filePath: string, format?: string): Promise<P
  */
 function detectFormat(filePath: string, content: string): IacFormat {
   const fileName = filePath.toLowerCase();
-  
+
   // Detect by file extension
   if (fileName.endsWith('.tf') || fileName.endsWith('.tfvars')) {
     return 'terraform';
   }
-  
+
   if (fileName.includes('pulumi') && (fileName.endsWith('.yaml') || fileName.endsWith('.yml'))) {
     return 'pulumi';
   }
-  
-  if (fileName.includes('cloudformation') || fileName.endsWith('.template.json') || 
-      fileName.endsWith('.template.yaml') || fileName.endsWith('.template.yml')) {
+
+  if (
+    fileName.includes('cloudformation') ||
+    fileName.endsWith('.template.json') ||
+    fileName.endsWith('.template.yaml') ||
+    fileName.endsWith('.template.yml')
+  ) {
     return 'cloudformation';
   }
-  
+
   // Detect by content
-  if (content.includes('resource "') || content.includes('provider "') || content.includes('terraform {')) {
+  if (
+    content.includes('resource "') ||
+    content.includes('provider "') ||
+    content.includes('terraform {')
+  ) {
     return 'terraform';
   }
-  
+
   if (content.includes('AWSTemplateFormatVersion') || content.includes('Resources:')) {
     return 'cloudformation';
   }
-  
+
   if (content.includes('runtime:') && content.includes('name:')) {
     return 'pulumi';
   }
-  
+
   // Default to terraform as fallback
   return 'terraform';
 }
@@ -229,9 +237,12 @@ function extractArrayValue(
   if (currentValue.includes(']')) {
     const closingIndex = currentValue.indexOf(']');
     const arrayContent = currentValue.substring(0, closingIndex);
-    
+
     // Split by comma and parse values
-    const values = arrayContent.split(',').map((v) => v.trim()).filter((v) => v);
+    const values = arrayContent
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v);
     return {
       value: values.map((v) => parseValue(v)),
       nextIndex: i + 1,
@@ -243,7 +254,7 @@ function extractArrayValue(
   // Multi-line array
   while (i < lines.length && bracketDepth > 0) {
     const line = lines[i].trim();
-    
+
     if (line.includes('[')) bracketDepth++;
     if (line.includes(']')) {
       bracketDepth--;
@@ -253,7 +264,7 @@ function extractArrayValue(
         break;
       }
     }
-    
+
     currentValue += ' ' + line;
     i++;
   }
@@ -263,7 +274,7 @@ function extractArrayValue(
     .split(',')
     .map((v) => v.trim())
     .filter((v) => v && v !== ']');
-  
+
   return {
     value: values.map((v) => parseValue(v)),
     nextIndex: i + 1,
