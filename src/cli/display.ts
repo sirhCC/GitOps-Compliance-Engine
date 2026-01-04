@@ -111,7 +111,7 @@ export function displayViolation(violation: PolicyViolation): void {
   console.log(`  Resource: ${violation.resource.type} "${violation.resource.id}"`);
   console.log(`  Location: ${chalk.gray(location)}`);
   console.log(`  Category: ${chalk.cyan(violation.category)}`);
-  
+
   if (violation.remediation) {
     console.log(`  ${chalk.cyan(`💡 Remediation: ${violation.remediation}`)}`);
   }
