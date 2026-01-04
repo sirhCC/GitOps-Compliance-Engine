@@ -2,9 +2,12 @@
 
 Enterprise-grade CLI tool that validates Infrastructure-as-Code (Terraform, Pulumi, CloudFormation) against organizational policies before deployment.
 
+[![CI](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-25%20passing-success)]()
 [![Policies](https://img.shields.io/badge/policies-22%20total-blue)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)]()
+[![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)]()
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ## Quick Start
 
