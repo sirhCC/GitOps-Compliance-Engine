@@ -1,0 +1,22 @@
+{
+  "policies": {
+    "enabled": [
+      "required-tags",
+      "no-public-access",
+      "encryption-at-rest"
+    ]
+  },
+  "severity": {
+    "failOn": "error"
+  },
+  "exclude": {
+    "files": [
+      "**/test/**",
+      "**/*.test.tf"
+    ],
+    "resources": [
+      "aws_s3_bucket_public_access_block",
+      "data.*"
+    ]
+  }
+}
