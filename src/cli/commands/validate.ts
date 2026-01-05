@@ -37,12 +37,40 @@ interface ValidateOptions {
   verbose?: boolean;
   showMetadata?: boolean;
   policies?: string[];
+  framework?: string[];
+  listFrameworks?: boolean;
 }
 
 export async function validateCommand(path: string, options: ValidateOptions): Promise<void> {
   try {
-    // Load configuration
+    // Initialize policy engine
     const config: ValidationConfig = options.config ? await loadConfig(options.config) : {};
+    const policyEngine = new PolicyEngine(config);
+
+    // Load custom policies if provided
+    if (options.policies && options.policies.length > 0) {
+      console.log(`Loading custom policies from ${options.policies.length} file(s)...`);
+      await policyEngine.loadCustomPoliciesFromFiles(options.policies);
+      console.log();
+    }
+
+    // List available frameworks if requested
+    if (options.listFrameworks) {
+      const frameworks = policyEngine.getAvailableFrameworks();
+      console.log('Available Compliance Frameworks:\n');
+      for (const framework of frameworks) {
+        console.log(`  • ${framework}`);
+      }
+      console.log(`\nTotal: ${frameworks.length} frameworks`);
+      console.log('\nUsage: gce validate . --framework HIPAA,PCI-DSS');
+      process.exit(0);
+    }
+
+    // Set framework filter if specified
+    if (options.framework && options.framework.length > 0) {
+      policyEngine.setFrameworkFilter(options.framework);
+      console.log(`Filtering by frameworks: ${options.framework.join(', ')}\n`);
+    }
 
     // Find IaC files
     const files = await findIacFiles(path, options.format || 'terraform');
@@ -53,16 +81,6 @@ export async function validateCommand(path: string, options: ValidateOptions): P
     }
 
     console.log(`Found ${files.length} file(s) to validate...\n`);
-
-    // Initialize policy engine
-    const policyEngine = new PolicyEngine(config);
-
-    // Load custom policies if provided
-    if (options.policies && options.policies.length > 0) {
-      console.log(`Loading custom policies from ${options.policies.length} file(s)...`);
-      await policyEngine.loadCustomPoliciesFromFiles(options.policies);
-      console.log();
-    }
 
     // Validate each file
     const summary: ValidationSummary = {
