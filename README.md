@@ -3,7 +3,7 @@
 Enterprise-grade CLI tool that validates Infrastructure-as-Code (Terraform, Pulumi, CloudFormation) against organizational policies before deployment.
 
 [![CI](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-45%20passing-success)]()
+[![Tests](https://img.shields.io/badge/tests-59%20passing-success)]()
 [![Policies](https://img.shields.io/badge/policies-38%20total-blue)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)]()
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)]()
@@ -34,6 +34,7 @@ gce validate ./infrastructure --verbose
 - ✅ **Multi-IaC Support**: Terraform, Pulumi, CloudFormation with auto-detection
 - ✅ **38 Built-in Policies**: Across Cost, Security, Compliance, Tagging, and Naming
 - ✅ **Custom Policy API**: Write and load your own policies (JS/TS/JSON)
+- ✅ **Framework Filtering**: Run only HIPAA, PCI-DSS, GDPR, SOC2, or other framework policies
 - ✅ **Policy Metadata**: Rationale, references, and frameworks for each policy
 - ✅ **CloudFormation Intrinsics**: Full support for Ref, GetAtt, Sub, Join, and more
 - ✅ **Compliance Frameworks**: GDPR, HIPAA, PCI-DSS, SOC2 policies built-in
@@ -44,7 +45,7 @@ gce validate ./infrastructure --verbose
 - ✅ **CI/CD Ready**: Exit codes for pipeline integration with examples
 - ✅ **Exclude Patterns**: Skip specific files or resources
 - ✅ **File Caching**: Improved performance for repeated validations
-- ✅ **Comprehensive Tests**: 55+ tests with integration coverage
+- ✅ **Comprehensive Tests**: 65+ tests with integration coverage
 
 ## Commands
 
@@ -61,6 +62,8 @@ Options:
   -v, --verbose            Show detailed output with policy metadata
   --show-metadata          Show policy rationale and references for violations
   -p, --policies <files...> Load custom policy files (.js, .ts, or .json)
+  --framework <frameworks...> Filter by compliance frameworks (HIPAA, PCI-DSS, GDPR, SOC2)
+  --list-frameworks        List all available compliance frameworks
 ```
 
 ### Custom Policies
@@ -101,6 +104,25 @@ gce validate . --policies team-policies.js security-policies.js
 ```
 
 See [Custom Policy Guide](docs/custom-policies.md) for complete documentation.
+
+### Framework Filtering
+Run only policies from specific compliance frameworks:
+
+```bash
+# List available frameworks
+gce validate . --list-frameworks
+
+# Validate HIPAA compliance only
+gce validate . --framework HIPAA
+
+# Multiple frameworks
+gce validate . --framework HIPAA,PCI-DSS,SOC2
+
+# Combine with custom policies
+gce validate . --policies ./custom-hipaa.js --framework HIPAA
+```
+
+Built-in frameworks include: HIPAA, PCI-DSS, GDPR, SOC2, ISO 27001, NIST 800-53, FedRAMP, CIS Benchmarks, OWASP Top 10, AWS Well-Architected, and more. See [Framework Filtering Guide](docs/framework-filtering.md) for details.
 
 ### Check
 Quick validation with defaults:
