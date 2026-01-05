@@ -806,4 +806,593 @@ export const defaultPolicies: PolicyRule[] = [
       return null;
     },
   },
+
+  // GDPR Compliance policies
+  {
+    id: 'gdpr-data-residency',
+    name: 'GDPR Data Residency',
+    description: 'Ensures EU data is stored in EU regions for GDPR compliance',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+      const region = props.region as string | undefined;
+
+      // Check if resource is tagged as containing EU personal data
+      if (tags?.DataClassification === 'GDPR' || tags?.['GDPR-Applicable'] === 'true') {
+        // Check if resource is in EU region
+        const euRegions = ['eu-west-1', 'eu-west-2', 'eu-west-3', 'eu-central-1', 'eu-north-1'];
+
+        if (region && !euRegions.includes(region)) {
+          return {
+            ruleId: 'gdpr-data-residency',
+            ruleName: 'GDPR Data Residency',
+            severity: 'error',
+            category: 'compliance',
+            message: 'GDPR-applicable data must be stored in EU regions',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: `Deploy to an EU region: ${euRegions.join(', ')}`,
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'gdpr-encryption-required',
+    name: 'GDPR Encryption Required',
+    description: 'Ensures personal data is encrypted per GDPR requirements',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      // Check if resource contains personal data
+      if (tags?.DataClassification === 'GDPR' || tags?.['GDPR-Applicable'] === 'true') {
+        const hasEncryption =
+          props.encrypted === true ||
+          props.encryption === true ||
+          props.encryption_enabled === true ||
+          props.server_side_encryption_configuration !== undefined ||
+          props.kms_key_id !== undefined;
+
+        if (!hasEncryption) {
+          return {
+            ruleId: 'gdpr-encryption-required',
+            ruleName: 'GDPR Encryption Required',
+            severity: 'error',
+            category: 'compliance',
+            message: 'GDPR-applicable resources must have encryption enabled',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable encryption at rest using KMS with customer-managed keys',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'gdpr-data-retention',
+    name: 'GDPR Data Retention Policy',
+    description: 'Ensures resources have data retention policies for GDPR compliance',
+    category: 'compliance',
+    severity: 'warning',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'GDPR' || tags?.['GDPR-Applicable'] === 'true') {
+        // Check for lifecycle policies on storage resources
+        if (
+          resource.type.includes('s3_bucket') ||
+          resource.type.includes('ebs_volume') ||
+          resource.type.includes('db_instance')
+        ) {
+          const hasRetentionPolicy =
+            props.lifecycle_rule !== undefined ||
+            props.lifecycle_policy !== undefined ||
+            props.backup_retention_period !== undefined ||
+            tags?.RetentionDays !== undefined;
+
+          if (!hasRetentionPolicy) {
+            return {
+              ruleId: 'gdpr-data-retention',
+              ruleName: 'GDPR Data Retention Policy',
+              severity: 'warning',
+              category: 'compliance',
+              message: 'GDPR requires defined data retention policies',
+              resource: {
+                id: resource.id,
+                type: resource.type,
+                location: resource.location,
+              },
+              remediation:
+                'Add lifecycle policy or RetentionDays tag to define data retention period',
+            };
+          }
+        }
+      }
+
+      return null;
+    },
+  },
+
+  // HIPAA Compliance policies
+  {
+    id: 'hipaa-encryption-required',
+    name: 'HIPAA Encryption Required',
+    description: 'Ensures PHI data is encrypted per HIPAA requirements',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      // Check if resource contains PHI
+      if (tags?.DataClassification === 'PHI' || tags?.['HIPAA-Applicable'] === 'true') {
+        const hasEncryption =
+          props.encrypted === true ||
+          props.encryption === true ||
+          props.encryption_enabled === true ||
+          props.server_side_encryption_configuration !== undefined ||
+          props.kms_key_id !== undefined;
+
+        if (!hasEncryption) {
+          return {
+            ruleId: 'hipaa-encryption-required',
+            ruleName: 'HIPAA Encryption Required',
+            severity: 'error',
+            category: 'compliance',
+            message: 'HIPAA requires encryption of PHI at rest',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable encryption using FIPS 140-2 validated cryptographic modules',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'hipaa-audit-logging',
+    name: 'HIPAA Audit Logging',
+    description: 'Ensures comprehensive audit logging for HIPAA compliance',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'PHI' || tags?.['HIPAA-Applicable'] === 'true') {
+        const hasLogging =
+          props.logging !== undefined ||
+          props.enabled_cloudwatch_logs_exports !== undefined ||
+          props.access_logs !== undefined ||
+          props.logging_config !== undefined;
+
+        if (!hasLogging) {
+          return {
+            ruleId: 'hipaa-audit-logging',
+            ruleName: 'HIPAA Audit Logging',
+            severity: 'error',
+            category: 'compliance',
+            message: 'HIPAA requires comprehensive audit logging for PHI access',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable CloudWatch logs and CloudTrail for audit compliance',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'hipaa-backup-required',
+    name: 'HIPAA Backup Required',
+    description: 'Ensures PHI data has automated backups enabled',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'PHI' || tags?.['HIPAA-Applicable'] === 'true') {
+        const dataResources = [
+          'aws_db_instance',
+          'aws_rds_cluster',
+          'aws_ebs_volume',
+          'aws_efs_file_system',
+        ];
+
+        if (dataResources.includes(resource.type)) {
+          const hasBackup =
+            props.backup_retention_period !== undefined ||
+            props.backup_window !== undefined ||
+            props.backup_policy !== undefined;
+
+          if (!hasBackup) {
+            return {
+              ruleId: 'hipaa-backup-required',
+              ruleName: 'HIPAA Backup Required',
+              severity: 'error',
+              category: 'compliance',
+              message: 'HIPAA requires automated backups for PHI data',
+              resource: {
+                id: resource.id,
+                type: resource.type,
+                location: resource.location,
+              },
+              remediation: 'Enable automated backups with minimum 7-day retention',
+            };
+          }
+        }
+      }
+
+      return null;
+    },
+  },
+
+  // PCI-DSS Compliance policies
+  {
+    id: 'pci-network-segmentation',
+    name: 'PCI-DSS Network Segmentation',
+    description: 'Ensures cardholder data environment is properly segmented',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'PCI' || tags?.['PCI-Applicable'] === 'true') {
+        // Resources handling cardholder data should be in dedicated VPC/subnet
+        const hasSegmentation =
+          props.vpc_id !== undefined ||
+          props.subnet_id !== undefined ||
+          props.subnet_ids !== undefined;
+
+        if (!hasSegmentation) {
+          return {
+            ruleId: 'pci-network-segmentation',
+            ruleName: 'PCI-DSS Network Segmentation',
+            severity: 'error',
+            category: 'compliance',
+            message: 'PCI-DSS requires network segmentation for cardholder data',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Deploy in dedicated VPC/subnet separate from general infrastructure',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'pci-encryption-transit',
+    name: 'PCI-DSS Encryption in Transit',
+    description: 'Ensures cardholder data is encrypted during transmission',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'PCI' || tags?.['PCI-Applicable'] === 'true') {
+        // Check for HTTPS/TLS
+        if (resource.type.includes('load_balancer') || resource.type.includes('api_gateway')) {
+          const protocol = props.protocol as string | undefined;
+          const listeners = props.listener as Array<Record<string, unknown>> | undefined;
+
+          const hasSecureTransit =
+            protocol?.toLowerCase().includes('https') ||
+            protocol?.toLowerCase().includes('tls') ||
+            Array.isArray(listeners) &&
+              listeners.some(
+                (l) =>
+                  (l.protocol as string)?.toLowerCase().includes('https') ||
+                  (l.protocol as string)?.toLowerCase().includes('tls')
+              );
+
+          if (!hasSecureTransit) {
+            return {
+              ruleId: 'pci-encryption-transit',
+              ruleName: 'PCI-DSS Encryption in Transit',
+              severity: 'error',
+              category: 'compliance',
+              message: 'PCI-DSS requires TLS 1.2+ for cardholder data transmission',
+              resource: {
+                id: resource.id,
+                type: resource.type,
+                location: resource.location,
+              },
+              remediation: 'Configure HTTPS/TLS 1.2 or higher with strong cipher suites',
+            };
+          }
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'pci-access-control',
+    name: 'PCI-DSS Access Control',
+    description: 'Ensures strict access controls for cardholder data',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'PCI' || tags?.['PCI-Applicable'] === 'true') {
+        // Check for public access
+        if (props.public === true || props.publicly_accessible === true) {
+          return {
+            ruleId: 'pci-access-control',
+            ruleName: 'PCI-DSS Access Control',
+            severity: 'error',
+            category: 'compliance',
+            message: 'PCI-DSS prohibits public access to cardholder data',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Remove public access and implement strict access controls',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'pci-logging-monitoring',
+    name: 'PCI-DSS Logging and Monitoring',
+    description: 'Ensures comprehensive logging for PCI compliance',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      if (tags?.DataClassification === 'PCI' || tags?.['PCI-Applicable'] === 'true') {
+        const hasLogging =
+          props.logging !== undefined ||
+          props.enabled_cloudwatch_logs_exports !== undefined ||
+          props.access_logs !== undefined ||
+          props.logging_config !== undefined;
+
+        if (!hasLogging) {
+          return {
+            ruleId: 'pci-logging-monitoring',
+            ruleName: 'PCI-DSS Logging and Monitoring',
+            severity: 'error',
+            category: 'compliance',
+            message: 'PCI-DSS requires comprehensive logging for cardholder data access',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable audit logging with minimum 90-day retention',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  // SOC2 Compliance policies
+  {
+    id: 'soc2-change-management',
+    name: 'SOC2 Change Management',
+    description: 'Ensures resources have proper change tracking',
+    category: 'compliance',
+    severity: 'warning',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+      const tags = props.tags as Record<string, string> | undefined;
+
+      // SOC2 requires change tracking
+      const hasChangeTracking =
+        tags?.ChangeTicket !== undefined ||
+        tags?.ChangeRequest !== undefined ||
+        tags?.ManagedBy !== undefined;
+
+      if (!hasChangeTracking) {
+        return {
+          ruleId: 'soc2-change-management',
+          ruleName: 'SOC2 Change Management',
+          severity: 'warning',
+          category: 'compliance',
+          message: 'SOC2 requires change tracking tags for audit trail',
+          resource: {
+            id: resource.id,
+            type: resource.type,
+            location: resource.location,
+          },
+          remediation: 'Add tags: ChangeTicket, ChangeRequest, or ManagedBy',
+        };
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'soc2-monitoring-alerting',
+    name: 'SOC2 Monitoring and Alerting',
+    description: 'Ensures critical resources have monitoring enabled',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+
+      // Critical resources should have monitoring
+      const criticalResources = [
+        'aws_db_instance',
+        'aws_rds_cluster',
+        'aws_lb',
+        'aws_api_gateway',
+        'aws_lambda_function',
+      ];
+
+      if (criticalResources.includes(resource.type)) {
+        const hasMonitoring =
+          props.monitoring_interval !== undefined ||
+          props.enabled_cloudwatch_logs_exports !== undefined ||
+          props.monitoring_role_arn !== undefined;
+
+        if (!hasMonitoring) {
+          return {
+            ruleId: 'soc2-monitoring-alerting',
+            ruleName: 'SOC2 Monitoring and Alerting',
+            severity: 'error',
+            category: 'compliance',
+            message: 'SOC2 requires monitoring for critical infrastructure',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable CloudWatch monitoring and configure alerting',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'soc2-data-backup',
+    name: 'SOC2 Data Backup',
+    description: 'Ensures data resources have backup procedures',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const dataResources = [
+        'aws_db_instance',
+        'aws_rds_cluster',
+        'aws_dynamodb_table',
+        'aws_efs_file_system',
+      ];
+
+      if (dataResources.includes(resource.type)) {
+        const props = resource.properties;
+        const hasBackup =
+          props.backup_retention_period !== undefined ||
+          props.point_in_time_recovery !== undefined ||
+          props.backup_window !== undefined;
+
+        if (!hasBackup) {
+          return {
+            ruleId: 'soc2-data-backup',
+            ruleName: 'SOC2 Data Backup',
+            severity: 'error',
+            category: 'compliance',
+            message: 'SOC2 requires backup procedures for data availability',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable automated backups with appropriate retention period',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
+
+  {
+    id: 'soc2-access-logging',
+    name: 'SOC2 Access Logging',
+    description: 'Ensures access to resources is logged for audit',
+    category: 'compliance',
+    severity: 'error',
+    enabled: false,
+    evaluate: (resource: IacResource): PolicyViolation | null => {
+      const props = resource.properties;
+
+      // Resources that handle sensitive operations
+      const auditResources = [
+        'aws_s3_bucket',
+        'aws_db_instance',
+        'aws_rds_cluster',
+        'aws_api_gateway',
+      ];
+
+      if (auditResources.includes(resource.type)) {
+        const hasLogging =
+          props.logging !== undefined ||
+          props.enabled_cloudwatch_logs_exports !== undefined ||
+          props.access_logs !== undefined;
+
+        if (!hasLogging) {
+          return {
+            ruleId: 'soc2-access-logging',
+            ruleName: 'SOC2 Access Logging',
+            severity: 'error',
+            category: 'compliance',
+            message: 'SOC2 requires access logging for audit trail',
+            resource: {
+              id: resource.id,
+              type: resource.type,
+              location: resource.location,
+            },
+            remediation: 'Enable access logging to CloudWatch or S3',
+          };
+        }
+      }
+
+      return null;
+    },
+  },
 ];
