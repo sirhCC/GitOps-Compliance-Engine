@@ -29,8 +29,14 @@ export interface ParseResult {
   metadata: {
     provider?: string;
     version?: string;
+    contentHash?: string;
   };
 }
+
+/**
+ * Alias for ParseResult used by cache
+ */
+export type ParsedIacFile = ParseResult;
 
 /**
  * A compliance policy rule
