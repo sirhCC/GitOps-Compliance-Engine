@@ -48,10 +48,12 @@ export async function reportCommand(path: string, options: ReportOptions): Promi
       process.exit(1);
     }
 
+    console.log(`Analyzing ${files.length} file(s)...\n`);
+
     // Initialize policy engine
     const policyEngine = new PolicyEngine(config);
 
-    // Validate each file
+    // Validate each file - process in parallel
     const summary: ValidationSummary = {
       totalFiles: files.length,
       totalResources: 0,
@@ -62,24 +64,29 @@ export async function reportCommand(path: string, options: ReportOptions): Promi
       results: [],
     };
 
-    for (const file of files) {
+    const validationPromises = files.map(async (file) => {
       const parseResult = await parseIacFile(file, options.iacFormat || 'terraform');
       const violations = policyEngine.validateResources(parseResult.resources);
 
-      const fileResult = {
+      return {
         file,
         format: parseResult.format,
         violations,
         resourceCount: parseResult.resources.length,
         passed: violations.length === 0,
       };
+    });
 
+    const results = await Promise.all(validationPromises);
+
+    // Aggregate results
+    for (const fileResult of results) {
       summary.results.push(fileResult);
-      summary.totalResources += parseResult.resources.length;
-      summary.totalViolations += violations.length;
+      summary.totalResources += fileResult.resourceCount;
+      summary.totalViolations += fileResult.violations.length;
 
       // Update severity and category counts
-      for (const violation of violations) {
+      for (const violation of fileResult.violations) {
         summary.violationsBySeverity[violation.severity]++;
         summary.violationsByCategory[violation.category]++;
       }
