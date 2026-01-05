@@ -111,6 +111,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'security',
     severity: 'error',
     enabled: true,
+    metadata: {
+      rationale:
+        'Encryption at rest protects sensitive data from unauthorized access if physical storage is compromised',
+      references: [
+        'https://docs.aws.amazon.com/kms/latest/developerguide/overview.html',
+        'https://csrc.nist.gov/publications/detail/sp/800-111/rev-1/final',
+      ],
+      frameworks: ['HIPAA', 'PCI-DSS', 'GDPR', 'SOC2', 'ISO 27001', 'FedRAMP'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
 
@@ -161,6 +170,16 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'security',
     severity: 'error',
     enabled: true,
+    metadata: {
+      rationale:
+        'Hardcoded secrets in source code pose severe security risks, as they can be exposed through version control, logs, or unauthorized access',
+      references: [
+        'https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_password',
+        'https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html',
+        'https://www.vaultproject.io/',
+      ],
+      frameworks: ['OWASP Top 10', 'CIS Benchmarks', 'PCI-DSS', 'SOC2'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
       const sensitiveKeys = ['password', 'secret', 'api_key', 'token', 'private_key'];
@@ -208,6 +227,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'security',
     severity: 'error',
     enabled: true,
+    metadata: {
+      rationale:
+        'Unrestricted security group rules (0.0.0.0/0) expose services to the entire internet, increasing attack surface and risk of unauthorized access',
+      references: [
+        'https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html',
+        'https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-cis-controls.html',
+      ],
+      frameworks: ['CIS AWS Foundations', 'NIST 800-53', 'PCI-DSS', 'HIPAA'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       if (!resource.type.includes('security_group') && !resource.type.includes('SecurityGroup')) {
         return null;
@@ -263,6 +291,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'security',
     severity: 'error',
     enabled: true,
+    metadata: {
+      rationale:
+        'Encryption in transit protects data from eavesdropping and man-in-the-middle attacks during network transmission',
+      references: [
+        'https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html',
+        'https://csrc.nist.gov/publications/detail/sp/800-52/rev-2/final',
+      ],
+      frameworks: ['HIPAA', 'PCI-DSS', 'SOC2', 'ISO 27001', 'FedRAMP'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
 
@@ -321,6 +358,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'security',
     severity: 'warning',
     enabled: true,
+    metadata: {
+      rationale:
+        'Wildcard IAM actions violate the principle of least privilege and can grant excessive permissions, potentially leading to privilege escalation',
+      references: [
+        'https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html',
+        'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html',
+      ],
+      frameworks: ['CIS AWS Foundations', 'AWS Well-Architected', 'SOC2', 'ISO 27001'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       if (!resource.type.includes('iam_') && !resource.type.includes('IAM')) {
         return null;
@@ -382,6 +428,14 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'naming',
     severity: 'info',
     enabled: true,
+    metadata: {
+      rationale:
+        'Consistent naming conventions improve resource discoverability, automation, and team collaboration across infrastructure',
+      references: [
+        'https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/naming-your-resources.html',
+      ],
+      frameworks: ['AWS Well-Architected', 'Cloud Governance'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       // Simple naming check: lowercase with hyphens
       const validNamePattern = /^[a-z0-9-]+$/;
@@ -414,6 +468,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'cost',
     severity: 'warning',
     enabled: true,
+    metadata: {
+      rationale:
+        'Large instance types can significantly increase infrastructure costs, especially if over-provisioned or used in non-production environments',
+      references: [
+        'https://aws.amazon.com/ec2/pricing/',
+        'https://docs.aws.amazon.com/wellarchitected/latest/cost-optimization-pillar/welcome.html',
+      ],
+      frameworks: ['FinOps', 'AWS Well-Architected Cost Optimization'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const instanceType = resource.properties.instance_type as string | undefined;
 
@@ -480,6 +543,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'cost',
     severity: 'info',
     enabled: true,
+    metadata: {
+      rationale:
+        'GP3 volumes offer up to 20% cost savings over GP2 with better baseline performance, providing immediate cost optimization opportunity',
+      references: [
+        'https://aws.amazon.com/ebs/general-purpose/',
+        'https://aws.amazon.com/blogs/storage/migrate-your-amazon-ebs-volumes-from-gp2-to-gp3-and-save-up-to-20-on-costs/',
+      ],
+      frameworks: ['FinOps', 'AWS Well-Architected Cost Optimization'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       if (!resource.type.includes('ebs_volume')) {
         return null;
@@ -712,6 +784,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'compliance',
     severity: 'error',
     enabled: false, // Disabled by default
+    metadata: {
+      rationale:
+        'Audit logging is essential for detecting security incidents, troubleshooting, and meeting regulatory compliance requirements',
+      references: [
+        'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html',
+        'https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html',
+      ],
+      frameworks: ['SOC2', 'ISO 27001', 'NIST 800-53', 'PCI-DSS'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
 
@@ -833,6 +914,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'compliance',
     severity: 'error',
     enabled: false,
+    metadata: {
+      rationale:
+        'GDPR Article 44-50 restrict transfers of personal data outside the EU/EEA, requiring data to remain within approved regions',
+      references: [
+        'https://gdpr-info.eu/chapter-5/',
+        'https://aws.amazon.com/compliance/gdpr-center/',
+      ],
+      frameworks: ['GDPR'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
       const tags = props.tags as Record<string, string> | undefined;
@@ -960,6 +1050,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'compliance',
     severity: 'error',
     enabled: false,
+    metadata: {
+      rationale:
+        'HIPAA Security Rule requires covered entities to implement encryption mechanisms to protect ePHI (45 CFR § 164.312(a)(2)(iv))',
+      references: [
+        'https://www.hhs.gov/hipaa/for-professionals/security/laws-regulations/index.html',
+        'https://aws.amazon.com/compliance/hipaa-compliance/',
+      ],
+      frameworks: ['HIPAA'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
       const tags = props.tags as Record<string, string> | undefined;
@@ -1088,6 +1187,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'compliance',
     severity: 'error',
     enabled: false,
+    metadata: {
+      rationale:
+        'PCI-DSS Requirement 1.3 mandates network segmentation to isolate the cardholder data environment from other networks',
+      references: [
+        'https://www.pcisecuritystandards.org/document_library',
+        'https://aws.amazon.com/compliance/pci-dss-level-1-faqs/',
+      ],
+      frameworks: ['PCI-DSS'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
       const tags = props.tags as Record<string, string> | undefined;
@@ -1250,6 +1358,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'compliance',
     severity: 'warning',
     enabled: false,
+    metadata: {
+      rationale:
+        'SOC2 CC8.1 requires organizations to track and authorize changes to system components for audit trail and accountability',
+      references: [
+        'https://www.aicpa.org/interestareas/frc/assuranceadvisoryservices/aicpasoc2report.html',
+        'https://kirkpatrickprice.com/blog/soc-2-common-criteria-cc8-1/',
+      ],
+      frameworks: ['SOC2'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const props = resource.properties;
       const tags = props.tags as Record<string, string> | undefined;
