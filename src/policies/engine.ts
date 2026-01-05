@@ -1,5 +1,6 @@
 import { PolicyRule, IacResource, PolicyViolation, ValidationConfig } from '../types.js';
 import { defaultPolicies } from './default-policies.js';
+import { loadCustomPolicies, mergePolicies } from './custom-loader.js';
 import { minimatch } from 'minimatch';
 
 /**
@@ -8,10 +9,27 @@ import { minimatch } from 'minimatch';
 export class PolicyEngine {
   private policies: PolicyRule[];
   private config: ValidationConfig;
+  private customPoliciesLoaded: PolicyRule[] = [];
 
   constructor(config: ValidationConfig = {}) {
     this.config = config;
     this.policies = this.loadPolicies(config);
+  }
+
+  /**
+   * Load custom policies from file(s)
+   */
+  async loadCustomPoliciesFromFiles(policyPaths: string[]): Promise<void> {
+    const allCustomPolicies: PolicyRule[] = [];
+
+    for (const path of policyPaths) {
+      const policies = await loadCustomPolicies(path);
+      allCustomPolicies.push(...policies);
+    }
+
+    this.customPoliciesLoaded = allCustomPolicies;
+    // Reload policies with custom ones included
+    this.policies = this.loadPolicies(this.config);
   }
 
   /**
@@ -78,7 +96,11 @@ export class PolicyEngine {
    * Load and configure policies
    */
   private loadPolicies(config: ValidationConfig): PolicyRule[] {
-    let policies = [...defaultPolicies];
+    // Merge custom policies with default ones
+    let policies =
+      this.customPoliciesLoaded.length > 0
+        ? mergePolicies(defaultPolicies, this.customPoliciesLoaded)
+        : [...defaultPolicies];
 
     // Filter by enabled/disabled lists
     if (config.policies?.enabled) {
