@@ -36,6 +36,7 @@ interface ValidateOptions {
   summary?: boolean;
   verbose?: boolean;
   showMetadata?: boolean;
+  policies?: string[];
 }
 
 export async function validateCommand(path: string, options: ValidateOptions): Promise<void> {
@@ -55,6 +56,13 @@ export async function validateCommand(path: string, options: ValidateOptions): P
 
     // Initialize policy engine
     const policyEngine = new PolicyEngine(config);
+
+    // Load custom policies if provided
+    if (options.policies && options.policies.length > 0) {
+      console.log(`Loading custom policies from ${options.policies.length} file(s)...`);
+      await policyEngine.loadCustomPoliciesFromFiles(options.policies);
+      console.log();
+    }
 
     // Validate each file
     const summary: ValidationSummary = {
