@@ -23,6 +23,8 @@ program
   .option('-v, --verbose', 'Show detailed output with policy metadata')
   .option('--show-metadata', 'Show policy rationale and references for violations')
   .option('-p, --policies <files...>', 'Load custom policy files (.js, .ts, or .json)')
+  .option('--framework <frameworks...>', 'Filter by compliance frameworks (HIPAA, PCI-DSS, GDPR, SOC2)')
+  .option('--list-frameworks', 'List all available compliance frameworks')
   .action(validateCommand);
 
 program
