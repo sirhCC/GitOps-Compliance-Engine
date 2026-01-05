@@ -381,16 +381,29 @@ function parseCloudFormation(content: string, filePath: string): ParseResult {
     template.Resources &&
     typeof template.Resources === 'object'
   ) {
+    const templateObj = template as Record<string, unknown>;
+    const parameters = templateObj.Parameters as Record<string, unknown> | undefined;
+    const conditions = templateObj.Conditions as Record<string, unknown> | undefined;
+
     for (const [resourceId, resourceDef] of Object.entries(template.Resources)) {
       const resource = resourceDef as Record<string, unknown>;
+
+      // Resolve intrinsic functions in properties
+      const rawProperties =
+        resource.Properties && typeof resource.Properties === 'object'
+          ? (resource.Properties as Record<string, unknown>)
+          : {};
+
+      const resolvedProperties = resolveCloudFormationIntrinsics(
+        rawProperties,
+        parameters,
+        conditions
+      );
 
       resources.push({
         id: resourceId,
         type: typeof resource.Type === 'string' ? resource.Type : 'Unknown',
-        properties:
-          resource.Properties && typeof resource.Properties === 'object'
-            ? (resource.Properties as Record<string, unknown>)
-            : {},
+        properties: resolvedProperties,
         location: {
           file: filePath,
         },
@@ -409,4 +422,129 @@ function parseCloudFormation(content: string, filePath: string): ParseResult {
           : undefined,
     },
   };
+}
+
+/**
+ * Resolve CloudFormation intrinsic functions
+ */
+function resolveCloudFormationIntrinsics(
+  obj: Record<string, unknown>,
+  parameters?: Record<string, unknown>,
+  _conditions?: Record<string, unknown>
+): Record<string, unknown> {
+  const resolved: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const objValue = value as Record<string, unknown>;
+
+      // Handle Ref
+      if ('Ref' in objValue) {
+        const refValue = objValue.Ref as string;
+
+        // Try to resolve parameter references
+        if (parameters && refValue in parameters) {
+          const param = parameters[refValue] as Record<string, unknown>;
+          resolved[key] = param.Default || `<Ref:${refValue}>`;
+        } else {
+          resolved[key] = `<Ref:${refValue}>`;
+        }
+        continue;
+      }
+
+      // Handle Fn::GetAtt
+      if ('Fn::GetAtt' in objValue) {
+        const getAttValue = objValue['Fn::GetAtt'];
+        if (Array.isArray(getAttValue) && getAttValue.length === 2) {
+          resolved[key] = `<GetAtt:${getAttValue[0]}.${getAttValue[1]}>`;
+        } else {
+          resolved[key] = '<GetAtt:unknown>';
+        }
+        continue;
+      }
+
+      // Handle Fn::Sub
+      if ('Fn::Sub' in objValue) {
+        const subValue = objValue['Fn::Sub'];
+        if (typeof subValue === 'string') {
+          resolved[key] = `<Sub:${subValue}>`;
+        } else if (Array.isArray(subValue) && subValue.length > 0) {
+          resolved[key] = `<Sub:${subValue[0]}>`;
+        } else {
+          resolved[key] = '<Sub:unknown>';
+        }
+        continue;
+      }
+
+      // Handle Fn::Join
+      if ('Fn::Join' in objValue) {
+        const joinValue = objValue['Fn::Join'];
+        if (Array.isArray(joinValue) && joinValue.length === 2) {
+          const delimiter = joinValue[0];
+          const values = joinValue[1];
+          if (Array.isArray(values)) {
+            resolved[key] = `<Join:${delimiter}:${values.length} values>`;
+          }
+        }
+        continue;
+      }
+
+      // Handle Fn::Select
+      if ('Fn::Select' in objValue) {
+        const selectValue = objValue['Fn::Select'];
+        if (Array.isArray(selectValue) && selectValue.length === 2) {
+          resolved[key] = `<Select:${selectValue[0]}>`;
+        }
+        continue;
+      }
+
+      // Handle Fn::FindInMap
+      if ('Fn::FindInMap' in objValue) {
+        const mapValue = objValue['Fn::FindInMap'];
+        if (Array.isArray(mapValue) && mapValue.length === 3) {
+          resolved[key] = `<FindInMap:${mapValue[0]}>`;
+        }
+        continue;
+      }
+
+      // Handle Fn::If
+      if ('Fn::If' in objValue) {
+        const ifValue = objValue['Fn::If'];
+        if (Array.isArray(ifValue) && ifValue.length === 3) {
+          // Return the true value for policy checking (optimistic)
+          resolved[key] = ifValue[1];
+        }
+        continue;
+      }
+
+      // Handle Fn::ImportValue
+      if ('Fn::ImportValue' in objValue) {
+        resolved[key] = '<ImportValue>';
+        continue;
+      }
+
+      // Recursively resolve nested objects
+      resolved[key] = resolveCloudFormationIntrinsics(
+        objValue,
+        parameters,
+        _conditions
+      );
+    } else if (Array.isArray(value)) {
+      // Handle arrays
+      resolved[key] = value.map((item) => {
+        if (item && typeof item === 'object' && !Array.isArray(item)) {
+          return resolveCloudFormationIntrinsics(
+            item as Record<string, unknown>,
+            parameters,
+            _conditions
+          );
+        }
+        return item;
+      });
+    } else {
+      resolved[key] = value;
+    }
+  }
+
+  return resolved;
 }
