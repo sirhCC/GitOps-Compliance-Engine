@@ -1,0 +1,27 @@
+{
+  "policies": [
+    {
+      "id": "custom-json-team-tag",
+      "name": "Team Tag Required (JSON)",
+      "description": "All resources must have a Team tag",
+      "category": "tagging",
+      "severity": "warning",
+      "enabled": true,
+      "metadata": {
+        "rationale": "Team tags help with ownership and accountability",
+        "frameworks": ["Internal Standards"]
+      }
+    },
+    {
+      "id": "custom-json-cost-alert",
+      "name": "High Cost Resource Alert (JSON)",
+      "description": "Warn about expensive resource types",
+      "category": "cost",
+      "severity": "info",
+      "enabled": true,
+      "metadata": {
+        "rationale": "Early cost awareness prevents budget overruns"
+      }
+    }
+  ]
+}
