@@ -34,6 +34,8 @@ interface ValidateOptions {
   severity?: string;
   failFast?: boolean;
   summary?: boolean;
+  verbose?: boolean;
+  showMetadata?: boolean;
 }
 
 export async function validateCommand(path: string, options: ValidateOptions): Promise<void> {
@@ -49,6 +51,8 @@ export async function validateCommand(path: string, options: ValidateOptions): P
       process.exit(1);
     }
 
+    console.log(`Found ${files.length} file(s) to validate...\n`);
+
     // Initialize policy engine
     const policyEngine = new PolicyEngine(config);
 
@@ -63,30 +67,36 @@ export async function validateCommand(path: string, options: ValidateOptions): P
       results: [],
     };
 
-    for (const file of files) {
-      const parseResult = await parseIacFile(file, options.format || 'terraform');
+    // Process files in parallel for better performance
+    const validationPromises = files.map(async (file) => {
+      const parseResult = await parseIacFile(file, options.format);
       const violations = policyEngine.validateResources(parseResult.resources);
 
-      const fileResult = {
+      return {
         file,
         format: parseResult.format,
         violations,
         resourceCount: parseResult.resources.length,
         passed: violations.length === 0,
       };
+    });
 
+    const results = await Promise.all(validationPromises);
+
+    // Aggregate results
+    for (const fileResult of results) {
       summary.results.push(fileResult);
-      summary.totalResources += parseResult.resources.length;
-      summary.totalViolations += violations.length;
+      summary.totalResources += fileResult.resourceCount;
+      summary.totalViolations += fileResult.violations.length;
 
       // Update severity and category counts
-      for (const violation of violations) {
+      for (const violation of fileResult.violations) {
         summary.violationsBySeverity[violation.severity]++;
         summary.violationsByCategory[violation.category]++;
       }
 
       // Check fail-fast
-      if (options.failFast && violations.length > 0) {
+      if (options.failFast && fileResult.violations.length > 0) {
         break;
       }
     }
@@ -96,7 +106,10 @@ export async function validateCommand(path: string, options: ValidateOptions): P
     summary.passed = shouldPass(summary.violationsBySeverity, failOnSeverity);
 
     // Display results
-    displayResults(summary, options.summary !== false);
+    displayResults(summary, options.summary !== false, {
+      verbose: options.verbose,
+      showMetadata: options.showMetadata || options.verbose,
+    });
 
     // Exit with appropriate code
     process.exit(summary.passed ? 0 : 1);
