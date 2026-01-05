@@ -1,4 +1,5 @@
 import { IacFormat, ParseResult, IacResource } from '../types.js';
+import { ParseError } from '../utils/errors.js';
 import { readFile } from 'fs/promises';
 import { parse as parseYaml } from 'yaml';
 
@@ -6,20 +7,33 @@ import { parse as parseYaml } from 'yaml';
  * Parse an IaC file and extract resources
  */
 export async function parseIacFile(filePath: string, format?: string): Promise<ParseResult> {
-  const content = await readFile(filePath, 'utf-8');
+  try {
+    const content = await readFile(filePath, 'utf-8');
 
-  // Auto-detect format if not provided
-  const iacFormat = format ? (format as IacFormat) : detectFormat(filePath, content);
+    // Auto-detect format if not provided
+    const iacFormat = format ? (format as IacFormat) : detectFormat(filePath, content);
 
-  switch (iacFormat) {
-    case 'terraform':
-      return parseTerraform(content, filePath);
-    case 'pulumi':
-      return parsePulumi(content, filePath);
-    case 'cloudformation':
-      return parseCloudFormation(content, filePath);
-    default:
-      throw new Error(`Unsupported IaC format: ${String(iacFormat)}`);
+    switch (iacFormat) {
+      case 'terraform':
+        return parseTerraform(content, filePath);
+      case 'pulumi':
+        return parsePulumi(content, filePath);
+      case 'cloudformation':
+        return parseCloudFormation(content, filePath);
+      default:
+        throw new ParseError(`Unsupported IaC format: ${String(iacFormat)}`, filePath);
+    }
+  } catch (error) {
+    if (error instanceof ParseError) {
+      throw error;
+    }
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new ParseError('File not found', filePath);
+    }
+    if (error instanceof Error) {
+      throw new ParseError(error.message, filePath);
+    }
+    throw new ParseError('Unknown parsing error', filePath);
   }
 }
 
