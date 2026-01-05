@@ -3,6 +3,7 @@ import { findIacFiles } from '../../utils/file-finder.js';
 import { parseIacFile } from '../../parsers/index.js';
 import { PolicyEngine } from '../../policies/engine.js';
 import { displayResults, displayError } from '../display.js';
+import { formatErrorMessage, suggestFix, ConfigError } from '../../utils/errors.js';
 import { readFile } from 'fs/promises';
 import { z } from 'zod';
 
@@ -100,7 +101,14 @@ export async function validateCommand(path: string, options: ValidateOptions): P
     // Exit with appropriate code
     process.exit(summary.passed ? 0 : 1);
   } catch (error) {
-    displayError(error instanceof Error ? error.message : 'Unknown error occurred');
+    const errorMsg = formatErrorMessage(error);
+    displayError(errorMsg);
+
+    const suggestion = suggestFix(error);
+    if (suggestion) {
+      console.log(`\n💡 Suggestion: ${suggestion}\n`);
+    }
+
     process.exit(1);
   }
 }
@@ -117,20 +125,20 @@ async function loadConfig(configPath: string): Promise<ValidationConfig> {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const messages = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
-      throw new Error(`Invalid config file: ${messages}`);
+      throw new ConfigError(`Invalid config structure: ${messages}`, configPath);
     }
 
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
-        throw new Error(`Config file not found: ${configPath}`);
+        throw new ConfigError('File not found', configPath);
       }
       if (error instanceof SyntaxError) {
-        throw new Error(`Invalid JSON in config file: ${configPath}`);
+        throw new ConfigError('Invalid JSON syntax', configPath);
       }
       throw error;
     }
 
-    throw new Error('Failed to load config file');
+    throw new ConfigError('Failed to load config', configPath);
   }
 }
 
