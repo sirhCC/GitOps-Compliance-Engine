@@ -1122,12 +1122,12 @@ export const defaultPolicies: PolicyRule[] = [
           const hasSecureTransit =
             protocol?.toLowerCase().includes('https') ||
             protocol?.toLowerCase().includes('tls') ||
-            Array.isArray(listeners) &&
+            (Array.isArray(listeners) &&
               listeners.some(
                 (l) =>
                   (l.protocol as string)?.toLowerCase().includes('https') ||
                   (l.protocol as string)?.toLowerCase().includes('tls')
-              );
+              ));
 
           if (!hasSecureTransit) {
             return {
