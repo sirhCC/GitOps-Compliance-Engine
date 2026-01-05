@@ -22,6 +22,7 @@ program
   .option('--no-summary', 'Skip summary output')
   .option('-v, --verbose', 'Show detailed output with policy metadata')
   .option('--show-metadata', 'Show policy rationale and references for violations')
+  .option('-p, --policies <files...>', 'Load custom policy files (.js, .ts, or .json)')
   .action(validateCommand);
 
 program
