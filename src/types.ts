@@ -43,6 +43,11 @@ export interface PolicyRule {
   severity: Severity;
   enabled: boolean;
   evaluate: (resource: IacResource) => PolicyViolation | null;
+  metadata?: {
+    rationale?: string;
+    references?: string[];
+    frameworks?: string[];
+  };
 }
 
 /**
