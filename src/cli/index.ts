@@ -20,6 +20,8 @@ program
   .option('-s, --severity <level>', 'Fail on severity level (error|warning|info)', 'error')
   .option('--fail-fast', 'Stop on first violation', false)
   .option('--no-summary', 'Skip summary output')
+  .option('-v, --verbose', 'Show detailed output with policy metadata')
+  .option('--show-metadata', 'Show policy rationale and references for violations')
   .action(validateCommand);
 
 program
