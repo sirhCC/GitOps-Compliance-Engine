@@ -1,28 +1,53 @@
 import { IacFormat, ParseResult, IacResource } from '../types.js';
 import { ParseError } from '../utils/errors.js';
+import { iacCache } from '../utils/cache.js';
 import { readFile } from 'fs/promises';
 import { parse as parseYaml } from 'yaml';
 
 /**
  * Parse an IaC file and extract resources
  */
-export async function parseIacFile(filePath: string, format?: string): Promise<ParseResult> {
+export async function parseIacFile(
+  filePath: string,
+  format?: string,
+  useCache = true
+): Promise<ParseResult> {
+  // Try to get from cache
+  if (useCache) {
+    const cached = await iacCache.get(filePath);
+    if (cached) {
+      return cached;
+    }
+  }
+
   try {
     const content = await readFile(filePath, 'utf-8');
 
     // Auto-detect format if not provided
     const iacFormat = format ? (format as IacFormat) : detectFormat(filePath, content);
 
+    let result: ParseResult;
+
     switch (iacFormat) {
       case 'terraform':
-        return parseTerraform(content, filePath);
+        result = parseTerraform(content, filePath);
+        break;
       case 'pulumi':
-        return parsePulumi(content, filePath);
+        result = parsePulumi(content, filePath);
+        break;
       case 'cloudformation':
-        return parseCloudFormation(content, filePath);
+        result = parseCloudFormation(content, filePath);
+        break;
       default:
         throw new ParseError(`Unsupported IaC format: ${String(iacFormat)}`, filePath);
     }
+
+    // Cache the result
+    if (useCache) {
+      await iacCache.set(filePath, result);
+    }
+
+    return result;
   } catch (error) {
     if (error instanceof ParseError) {
       throw error;
