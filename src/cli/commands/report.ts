@@ -3,8 +3,30 @@ import { findIacFiles } from '../../utils/file-finder.js';
 import { parseIacFile } from '../../parsers/index.js';
 import { PolicyEngine } from '../../policies/engine.js';
 import { displayError, displaySuccess } from '../display.js';
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile } from 'fs/promises';
 import { stringify as stringifyYaml } from 'yaml';
+import { z } from 'zod';
+
+// Validation config schema
+const ValidationConfigSchema = z.object({
+  policies: z
+    .object({
+      enabled: z.array(z.string()).optional(),
+      disabled: z.array(z.string()).optional(),
+    })
+    .optional(),
+  severity: z
+    .object({
+      failOn: z.enum(['error', 'warning', 'info']).optional(),
+    })
+    .optional(),
+  exclude: z
+    .object({
+      files: z.array(z.string()).optional(),
+      resources: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
 
 interface ReportOptions {
   output?: string;
@@ -83,10 +105,27 @@ export async function reportCommand(path: string, options: ReportOptions): Promi
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/require-await
-async function loadConfig(_configPath: string): Promise<ValidationConfig> {
-  // TODO: Implement config file loading
-  return {};
+async function loadConfig(configPath: string): Promise<ValidationConfig> {
+  try {
+    const configContent = await readFile(configPath, 'utf-8');
+    const configData = JSON.parse(configContent) as unknown;
+
+    // Validate config structure
+    const validatedConfig = ValidationConfigSchema.parse(configData);
+
+    return validatedConfig as ValidationConfig;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(`Config file not found: ${configPath}`);
+    }
+    if (error instanceof SyntaxError) {
+      throw new Error(`Invalid JSON in config file: ${configPath}`);
+    }
+    if (error instanceof z.ZodError) {
+      throw new Error(`Invalid config format: ${error.errors.map((e) => e.message).join(', ')}`);
+    }
+    throw error;
+  }
 }
 
 function generateReport(summary: ValidationSummary, format: string): string {
