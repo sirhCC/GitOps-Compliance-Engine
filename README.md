@@ -4,7 +4,7 @@ Enterprise-grade CLI tool that validates Infrastructure-as-Code (Terraform, Pulu
 
 [![CI](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-25%20passing-success)]()
-[![Policies](https://img.shields.io/badge/policies-22%20total-blue)]()
+[![Policies](https://img.shields.io/badge/policies-38%20total-blue)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)]()
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
@@ -29,12 +29,14 @@ gce validate ./infrastructure
 ## Features
 
 - ✅ **Multi-IaC Support**: Terraform, Pulumi, CloudFormation with auto-detection
-- ✅ **22 Built-in Policies**: Across Cost, Security, Compliance, Tagging, and Naming
+- ✅ **38 Built-in Policies**: Across Cost, Security, Compliance, Tagging, and Naming
+- ✅ **CloudFormation Intrinsics**: Full support for Ref, GetAtt, Sub, Join, and more
+- ✅ **Compliance Frameworks**: GDPR, HIPAA, PCI-DSS, SOC2 policies built-in
 - ✅ **Severity Levels**: Error, Warning, Info with configurable thresholds
 - ✅ **Flexible Configuration**: Enable/disable policies, exclude patterns
 - ✅ **Rich Output**: Color-coded CLI output with remediation suggestions
 - ✅ **Multiple Report Formats**: JSON, YAML, Markdown, HTML
-- ✅ **CI/CD Ready**: Exit codes for pipeline integration
+- ✅ **CI/CD Ready**: Exit codes for pipeline integration with examples
 - ✅ **Exclude Patterns**: Skip specific files or resources
 - ✅ **Comprehensive Tests**: 25 tests with integration coverage
 
@@ -95,9 +97,63 @@ Options:
 - **cost-multi-az** (info): Alerts about Multi-AZ cost implications
 - **cost-nat-gateway** (info): NAT Gateway cost awareness
 
-### Compliance (3 policies)
+### Compliance (6 policies)
 - **compliance-logging** (error): Requires audit logging
 - **compliance-versioning** (warning): Requires S3 versioning
+- **compliance-mfa-delete** (info): MFA delete for production S3 buckets
+
+### GDPR Compliance (3 policies)
+- **gdpr-data-residency** (error): Ensures EU data stays in EU regions
+- **gdpr-encryption-required** (error): Encryption for personal data
+- **gdpr-data-retention** (warning): Data retention policies required
+
+### HIPAA Compliance (3 policies)
+- **hipaa-encryption-required** (error): PHI data encryption
+- **hipaa-audit-logging** (error): Comprehensive audit logging
+- **hipaa-backup-required** (error): Automated backups for PHI
+
+### PCI-DSS Compliance (4 policies)
+- **pci-network-segmentation** (error): Network segmentation for cardholder data
+- **pci-encryption-transit** (error): TLS 1.2+ for data transmission
+- **pci-access-control** (error): Strict access controls
+- **pci-logging-monitoring** (error): Comprehensive logging
+
+### SOC2 Compliance (4 policies)
+- **soc2-change-management** (warning): Change tracking tags
+- **soc2-monitoring-alerting** (error): Monitoring for critical resources
+- **soc2-data-backup** (error): Backup procedures required
+- **soc2-access-logging** (error): Access logging for audit trail
+
+## CI/CD Integration
+
+The tool is designed for seamless CI/CD integration. We provide examples for:
+
+- **GitHub Actions** - Automated PR checks and reports
+- **GitLab CI/CD** - Multi-environment pipelines
+- **Jenkins** - Declarative and scripted pipelines
+- **Azure DevOps** - Complete pipeline configuration
+- **CircleCI** - Workflow automation
+
+See [docs/ci-cd-integration.md](docs/ci-cd-integration.md) for detailed examples and best practices.
+
+### Quick GitHub Actions Example
+
+```yaml
+name: IaC Compliance
+
+on: [pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install -g gitops-compliance-engine
+      - run: gce validate ./infrastructure --severity error
+```
 - **compliance-mfa-delete** (info): MFA delete for production S3 buckets
 
 **Total: 22 policies** (13 enabled by default)
@@ -146,14 +202,89 @@ gce validate ./infrastructure -c gce.config.json
 ```
 
 ### Enable Optional Policies
-```json
+```bash
+# Create config to enable compliance policies
+cat > compliance-config.json << EOF
 {
   "policies": {
     "enabled": [
-      "required-tags",
       "cost-center-tag",
       "backup-tag",
-      "compliance (watch mode)
+      "expiration-tag",
+      "compliance-logging",
+      "compliance-versioning"
+    ]
+  }
+}
+EOF
+
+gce validate ./infrastructure -c compliance-config.json
+```
+
+### Enable Compliance Frameworks
+
+Enable GDPR compliance policies:
+```bash
+cat > gdpr-compliance.json << EOF
+{
+  "policies": {
+    "enabled": [
+      "gdpr-data-residency",
+      "gdpr-encryption-required",
+      "gdpr-data-retention",
+      "encryption-at-rest",
+      "encryption-in-transit",
+      "compliance-logging"
+    ]
+  },
+  "severity": { "failOn": "error" }
+}
+EOF
+
+gce validate ./infrastructure -c gdpr-compliance.json
+```
+
+Enable HIPAA compliance:
+```bash
+cat > hipaa-compliance.json << EOF
+{
+  "policies": {
+    "enabled": [
+      "hipaa-encryption-required",
+      "hipaa-audit-logging",
+      "hipaa-backup-required",
+      "encryption-at-rest",
+      "no-public-access"
+    ]
+  }
+}
+EOF
+
+gce validate ./infrastructure -c hipaa-compliance.json
+```
+
+### Tag Resources for Compliance
+
+Tag resources to indicate compliance requirements:
+
+```hcl
+resource "aws_s3_bucket" "patient_data" {
+  bucket = "patient-records"
+  
+  tags = {
+    DataClassification = "PHI"
+    HIPAA-Applicable   = "true"
+    Environment        = "production"
+  }
+}
+```
+
+The compliance policies will automatically detect and enforce requirements based on tags.
+
+## Development
+
+```bash
+# Watch mode for TypeScript compilation
 npm run dev
 
 # Run tests
