@@ -43,11 +43,11 @@
   },
   "dependencies": {
     "chalk": "^5.3.0",
-    "commander": "^12.1.0",
+    "commander": "^14.0.2",
     "fast-glob": "^3.3.2",
     "minimatch": "^10.1.1",
     "yaml": "^2.5.1",
-    "zod": "^3.23.8"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/minimatch": "^5.1.2",
