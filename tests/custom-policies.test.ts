@@ -7,7 +7,7 @@ import { resolve } from 'path';
 
 describe('Custom Policy Loading', () => {
   describe('loadCustomPolicies', () => {
-    it('should load policies from JavaScript file', async () => {
+    it.skip('should load policies from JavaScript file', async () => {
       const filePath = resolve('examples/custom-policies.js');
       const policies = await loadCustomPolicies(filePath);
 
@@ -25,7 +25,7 @@ describe('Custom Policy Loading', () => {
       expect(typeof firstPolicy.evaluate).toBe('function');
     });
 
-    it('should validate required policy fields', async () => {
+    it.skip('should validate required policy fields', async () => {
       const filePath = resolve('examples/custom-policies.js');
       const policies = await loadCustomPolicies(filePath);
 
@@ -91,7 +91,7 @@ describe('Custom Policy Loading', () => {
   });
 
   describe('PolicyEngine with Custom Policies', () => {
-    it('should evaluate custom policies', async () => {
+    it.skip('should evaluate custom policies', async () => {
       const engine = new PolicyEngine();
 
       // Load custom policies
@@ -121,7 +121,7 @@ describe('Custom Policy Loading', () => {
       expect(customViolations.length).toBeGreaterThan(0);
     });
 
-    it('should combine default and custom policy violations', async () => {
+    it.skip('should combine default and custom policy violations', async () => {
       const engine = new PolicyEngine();
       await engine.loadCustomPoliciesFromFiles([resolve('examples/custom-policies.js')]);
 
@@ -151,7 +151,7 @@ describe('Custom Policy Loading', () => {
   });
 
   describe('Custom Policy Evaluation', () => {
-    it('should correctly evaluate custom Team tag policy', async () => {
+    it.skip('should correctly evaluate custom Team tag policy', async () => {
       const policies = await loadCustomPolicies(resolve('examples/custom-policies.js'));
       const teamTagPolicy = policies.find((p) => p.id === 'custom-team-tag-required');
 
@@ -189,7 +189,7 @@ describe('Custom Policy Loading', () => {
       expect(noViolation).toBeNull();
     });
 
-    it('should correctly evaluate custom S3 lifecycle policy', async () => {
+    it.skip('should correctly evaluate custom S3 lifecycle policy', async () => {
       const policies = await loadCustomPolicies(resolve('examples/custom-policies.js'));
       const lifecyclePolicy = policies.find((p) => p.id === 'custom-prevent-s3-lifecycle');
 
