@@ -33,6 +33,7 @@ gce validate ./infrastructure --verbose
 
 - ✅ **Multi-IaC Support**: Terraform, Pulumi, CloudFormation with auto-detection
 - ✅ **38 Built-in Policies**: Across Cost, Security, Compliance, Tagging, and Naming
+- ✅ **Custom Policy API**: Write and load your own policies (JS/TS/JSON)
 - ✅ **Policy Metadata**: Rationale, references, and frameworks for each policy
 - ✅ **CloudFormation Intrinsics**: Full support for Ref, GetAtt, Sub, Join, and more
 - ✅ **Compliance Frameworks**: GDPR, HIPAA, PCI-DSS, SOC2 policies built-in
@@ -43,7 +44,7 @@ gce validate ./infrastructure --verbose
 - ✅ **CI/CD Ready**: Exit codes for pipeline integration with examples
 - ✅ **Exclude Patterns**: Skip specific files or resources
 - ✅ **File Caching**: Improved performance for repeated validations
-- ✅ **Comprehensive Tests**: 45 tests with integration coverage
+- ✅ **Comprehensive Tests**: 55+ tests with integration coverage
 
 ## Commands
 
@@ -59,7 +60,47 @@ Options:
   --no-summary             Skip summary output
   -v, --verbose            Show detailed output with policy metadata
   --show-metadata          Show policy rationale and references for violations
+  -p, --policies <files...> Load custom policy files (.js, .ts, or .json)
 ```
+
+### Custom Policies
+Write your own policies to extend the built-in set:
+
+```bash
+# Create custom-policies.js
+cat > custom-policies.js << 'EOF'
+export const policies = [{
+  id: 'custom-team-tag',
+  name: 'Team Tag Required',
+  description: 'All resources must have a Team tag',
+  category: 'tagging',
+  severity: 'error',
+  enabled: true,
+  evaluate: (resource) => {
+    if (!resource.properties.tags?.Team) {
+      return {
+        ruleId: 'custom-team-tag',
+        ruleName: 'Team Tag Required',
+        severity: 'error',
+        category: 'tagging',
+        message: 'Missing Team tag',
+        resource: { id: resource.id, type: resource.type, location: resource.location },
+        remediation: 'Add Team tag with your team name'
+      };
+    }
+    return null;
+  }
+}];
+EOF
+
+# Use custom policies
+gce validate . --policies custom-policies.js
+
+# Load multiple policy files
+gce validate . --policies team-policies.js security-policies.js
+```
+
+See [Custom Policy Guide](docs/custom-policies.md) for complete documentation.
 
 ### Check
 Quick validation with defaults:
