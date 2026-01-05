@@ -480,8 +480,8 @@ function resolveCloudFormationIntrinsics(
       if ('Fn::Join' in objValue) {
         const joinValue = objValue['Fn::Join'];
         if (Array.isArray(joinValue) && joinValue.length === 2) {
-          const delimiter = joinValue[0];
-          const values = joinValue[1];
+          const delimiter = joinValue[0] as string;
+          const values = joinValue[1] as unknown[];
           if (Array.isArray(values)) {
             resolved[key] = `<Join:${delimiter}:${values.length} values>`;
           }
@@ -493,7 +493,7 @@ function resolveCloudFormationIntrinsics(
       if ('Fn::Select' in objValue) {
         const selectValue = objValue['Fn::Select'];
         if (Array.isArray(selectValue) && selectValue.length === 2) {
-          resolved[key] = `<Select:${selectValue[0]}>`;
+          resolved[key] = `<Select:${String(selectValue[0])}>`;
         }
         continue;
       }
@@ -502,7 +502,7 @@ function resolveCloudFormationIntrinsics(
       if ('Fn::FindInMap' in objValue) {
         const mapValue = objValue['Fn::FindInMap'];
         if (Array.isArray(mapValue) && mapValue.length === 3) {
-          resolved[key] = `<FindInMap:${mapValue[0]}>`;
+          resolved[key] = `<FindInMap:${String(mapValue[0])}>`;
         }
         continue;
       }
@@ -512,7 +512,7 @@ function resolveCloudFormationIntrinsics(
         const ifValue = objValue['Fn::If'];
         if (Array.isArray(ifValue) && ifValue.length === 3) {
           // Return the true value for policy checking (optimistic)
-          resolved[key] = ifValue[1];
+          resolved[key] = ifValue[1] as unknown;
         }
         continue;
       }
@@ -524,14 +524,10 @@ function resolveCloudFormationIntrinsics(
       }
 
       // Recursively resolve nested objects
-      resolved[key] = resolveCloudFormationIntrinsics(
-        objValue,
-        parameters,
-        _conditions
-      );
+      resolved[key] = resolveCloudFormationIntrinsics(objValue, parameters, _conditions);
     } else if (Array.isArray(value)) {
       // Handle arrays
-      resolved[key] = value.map((item) => {
+      resolved[key] = value.map((item): unknown => {
         if (item && typeof item === 'object' && !Array.isArray(item)) {
           return resolveCloudFormationIntrinsics(
             item as Record<string, unknown>,
@@ -539,7 +535,7 @@ function resolveCloudFormationIntrinsics(
             _conditions
           );
         }
-        return item;
+        return item as unknown;
       });
     } else {
       resolved[key] = value;
