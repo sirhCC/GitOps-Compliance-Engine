@@ -1,15 +1,25 @@
 import chalk from 'chalk';
 import { ValidationSummary, ValidationResult, Severity, PolicyViolation } from '../types.js';
+import { defaultPolicies } from '../policies/default-policies.js';
+
+interface DisplayOptions {
+  verbose?: boolean;
+  showMetadata?: boolean;
+}
 
 /**
  * Formats and displays validation results to the console
  */
-export function displayResults(summary: ValidationSummary, showSummary = true): void {
+export function displayResults(
+  summary: ValidationSummary,
+  showSummary = true,
+  options: DisplayOptions = {}
+): void {
   console.log();
 
   // Display per-file results
   for (const result of summary.results) {
-    displayFileResult(result);
+    displayFileResult(result, options);
   }
 
   // Display summary
@@ -19,7 +29,7 @@ export function displayResults(summary: ValidationSummary, showSummary = true): 
   }
 }
 
-function displayFileResult(result: ValidationResult): void {
+function displayFileResult(result: ValidationResult, options: DisplayOptions = {}): void {
   const statusIcon = result.passed ? chalk.green('✓') : chalk.red('✗');
   const fileName = chalk.bold(result.file);
 
@@ -38,6 +48,11 @@ function displayFileResult(result: ValidationResult): void {
 
       if (violation.remediation) {
         console.log(`    ${chalk.cyan(`💡 ${violation.remediation}`)}`);
+      }
+
+      // Display metadata if available and requested
+      if (options.showMetadata || options.verbose) {
+        displayViolationMetadata(violation);
       }
     }
     console.log();
@@ -102,7 +117,7 @@ export function displaySuccess(message: string): void {
 /**
  * Display a single violation (for detailed output)
  */
-export function displayViolation(violation: PolicyViolation): void {
+export function displayViolation(violation: PolicyViolation, showMetadata = false): void {
   const severityColor = getSeverityColor(violation.severity);
   const severityBadge = severityColor(`[${violation.severity.toUpperCase()}]`);
   const location = `${violation.resource.location.file}:${violation.resource.location.line || 0}`;
@@ -115,5 +130,46 @@ export function displayViolation(violation: PolicyViolation): void {
   if (violation.remediation) {
     console.log(`  ${chalk.cyan(`💡 Remediation: ${violation.remediation}`)}`);
   }
+
+  if (showMetadata) {
+    displayViolationMetadata(violation);
+  }
+
   console.log();
+}
+
+/**
+ * Display policy metadata for a violation
+ */
+function displayViolationMetadata(violation: PolicyViolation): void {
+  const policy = defaultPolicies.find((p) => p.id === violation.ruleId);
+
+  if (policy?.metadata) {
+    const indent = '      ';
+
+    if (policy.metadata.rationale) {
+      console.log(`${indent}${chalk.dim('Rationale:')}`);
+      console.log(`${indent}${chalk.dim(policy.metadata.rationale)}`);
+    }
+
+    if (policy.metadata.frameworks && policy.metadata.frameworks.length > 0) {
+      console.log(
+        `${indent}${chalk.dim('Frameworks:')} ${chalk.dim(policy.metadata.frameworks.join(', '))}`
+      );
+    }
+
+    if (policy.metadata.references && policy.metadata.references.length > 0) {
+      console.log(`${indent}${chalk.dim('References:')}`);
+      policy.metadata.references.forEach((ref) => {
+        console.log(`${indent}${chalk.dim(`  • ${ref}`)}`);
+      });
+    }
+  }
+}
+
+/**
+ * Display information message
+ */
+export function displayInfo(message: string): void {
+  console.log(chalk.blue(`ℹ ${message}`));
 }
