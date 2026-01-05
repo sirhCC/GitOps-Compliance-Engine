@@ -12,6 +12,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'tagging',
     severity: 'warning',
     enabled: true,
+    metadata: {
+      rationale:
+        'Resource tagging is essential for cost allocation, resource management, and operational visibility',
+      references: [
+        'https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html',
+        'https://www.terraform.io/docs/language/meta-arguments/tags.html',
+      ],
+      frameworks: ['AWS Well-Architected', 'FinOps', 'Cloud Governance'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       const requiredTags = ['Environment', 'Owner', 'Project'];
       const tags = resource.properties.tags as Record<string, string> | undefined;
@@ -61,6 +70,15 @@ export const defaultPolicies: PolicyRule[] = [
     category: 'security',
     severity: 'error',
     enabled: true,
+    metadata: {
+      rationale:
+        'Publicly accessible resources expose your infrastructure to potential attacks and data breaches',
+      references: [
+        'https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Security.html',
+        'https://owasp.org/www-project-top-ten/',
+      ],
+      frameworks: ['CIS AWS Foundations', 'NIST 800-53', 'SOC2', 'ISO 27001'],
+    },
     evaluate: (resource: IacResource): PolicyViolation | null => {
       // Check for public access patterns
       const props = resource.properties;
