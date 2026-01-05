@@ -3,7 +3,7 @@
 Enterprise-grade CLI tool that validates Infrastructure-as-Code (Terraform, Pulumi, CloudFormation) against organizational policies before deployment.
 
 [![CI](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/sirhCC/GitOps-Compliance-Engine/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-25%20passing-success)]()
+[![Tests](https://img.shields.io/badge/tests-45%20passing-success)]()
 [![Policies](https://img.shields.io/badge/policies-38%20total-blue)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)]()
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)]()
@@ -21,15 +21,19 @@ npm run build
 # Run validation on current directory
 node dist/cli/index.js validate .
 
+# Show policy metadata for violations
+node dist/cli/index.js validate . --show-metadata
+
 # Or link globally and use the CLI alias
 npm link
-gce validate ./infrastructure
+gce validate ./infrastructure --verbose
 ```
 
 ## Features
 
 - ✅ **Multi-IaC Support**: Terraform, Pulumi, CloudFormation with auto-detection
 - ✅ **38 Built-in Policies**: Across Cost, Security, Compliance, Tagging, and Naming
+- ✅ **Policy Metadata**: Rationale, references, and frameworks for each policy
 - ✅ **CloudFormation Intrinsics**: Full support for Ref, GetAtt, Sub, Join, and more
 - ✅ **Compliance Frameworks**: GDPR, HIPAA, PCI-DSS, SOC2 policies built-in
 - ✅ **Severity Levels**: Error, Warning, Info with configurable thresholds
@@ -38,7 +42,8 @@ gce validate ./infrastructure
 - ✅ **Multiple Report Formats**: JSON, YAML, Markdown, HTML
 - ✅ **CI/CD Ready**: Exit codes for pipeline integration with examples
 - ✅ **Exclude Patterns**: Skip specific files or resources
-- ✅ **Comprehensive Tests**: 25 tests with integration coverage
+- ✅ **File Caching**: Improved performance for repeated validations
+- ✅ **Comprehensive Tests**: 45 tests with integration coverage
 
 ## Commands
 
@@ -52,6 +57,8 @@ Options:
   -s, --severity <level>   Fail on severity level (error|warning|info)
   --fail-fast              Stop on first violation
   --no-summary             Skip summary output
+  -v, --verbose            Show detailed output with policy metadata
+  --show-metadata          Show policy rationale and references for violations
 ```
 
 ### Check
